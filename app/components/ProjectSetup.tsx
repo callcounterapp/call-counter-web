@@ -30,7 +30,7 @@ export default function ProjectSetup({ projects, setProjects }) {
         .from('projects')
         .select('*')
         .eq('user_id', user?.id)
-    
+  
       if (error) throw error
       
       setProjects(data || [])
@@ -38,7 +38,7 @@ export default function ProjectSetup({ projects, setProjects }) {
       console.error('Error fetching projects:', error)
       alert('Fehler beim Laden der Projekte. Bitte versuchen Sie es erneut.')
     }
-  }, [user])
+  }, [user, setProjects])
 
   useEffect(() => {
     fetchProjects()
@@ -447,4 +447,3 @@ export default function ProjectSetup({ projects, setProjects }) {
     </div>
   )
 }
-

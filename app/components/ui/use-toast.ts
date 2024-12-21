@@ -22,13 +22,6 @@ type ActionType = {
   REMOVE_TOAST: "REMOVE_TOAST";
 }
 
-const actionType: ActionType = {
-  ADD_TOAST: "ADD_TOAST",
-  UPDATE_TOAST: "UPDATE_TOAST",
-  DISMISS_TOAST: "DISMISS_TOAST",
-  REMOVE_TOAST: "REMOVE_TOAST",
-}
-
 let count = 0
 
 function genId() {
