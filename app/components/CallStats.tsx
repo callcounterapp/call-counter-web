@@ -42,10 +42,7 @@ export default function CallStats() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [debugInfo, setDebugInfo] = useState<string>('')
-  const [activeTab, setActiveTab] = useState('all')
-  const [selectedDurationFilter, setSelectedDurationFilter] = useState('all')
-
+  const [activeTab, setActiveTab] = useState('all') // Update 1
   const { toast } = useToast()
   const { user } = useAuth()
 
@@ -91,28 +88,7 @@ export default function CallStats() {
             : project.custom_rates
         }));
 
-        const debugText = `
-          Found ${processedProjects.length || 0} projects and ${processedCalls.length || 0} calls for user ${user.id}
-          
-          Projects:
-          ${processedProjects?.map(p => `
-            ${p.display_name || p.internal_name || 'Unnamed'}:
-            - ID: ${p.id}
-            - Internal Name: ${p.internal_name}
-            - Payment Model: ${p.payment_model}
-            - Per Minute Rate: ${p.per_minute_rate}
-            - Per Call Rate: ${p.per_call_rate}
-            - Min Duration: ${p.min_duration}
-            - Custom Rates: ${JSON.stringify(p.custom_rates)}
-          `).join('\n')}
-          
-          Sample Calls:
-          ${processedCalls.slice(0, 3).map(c => `
-            ${c.name}: Duration ${c.Duration}s (from ${c.formattedduration}), Internal Name: ${c.internal_name}
-          `).join('\n')}
-        `;
-        
-        setDebugInfo(debugText);
+
         setCalls(processedCalls);
         setProjects(processedProjects);
         console.log('Processed projects:', processedProjects);
@@ -326,16 +302,6 @@ export default function CallStats() {
 
   return (
     <div>
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Debug Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <pre className="whitespace-pre-wrap bg-gray-100 p-4 rounded">
-            {debugInfo}
-          </pre>
-        </CardContent>
-      </Card>
       <Card>
         <CardHeader className="bg-gray-100 border-b border-gray-200">
           <div className="flex flex-col md:flex-row justify-between items-center">
@@ -346,7 +312,7 @@ export default function CallStats() {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6"> {/* Update 2 */}
             <TabsList className="bg-gray-100 p-1 rounded-lg flex flex-wrap gap-2">
               <TabsTrigger 
                 value="all"
