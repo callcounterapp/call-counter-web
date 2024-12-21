@@ -130,18 +130,6 @@ export default function CallStats() {
     fetchData();
   }, [user]);
 
-  const formatTime = (timestamp: string): string => {
-    if (!timestamp) return '-'
-    const date = new Date(timestamp)
-    return date.toLocaleString('de-DE', { 
-      year: 'numeric', 
-      month: '2-digit', 
-      day: '2-digit', 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit' 
-    })
-  }
 
   const formatDuration = (duration: number): string => {
     if (!duration && duration !== 0) return '-';
@@ -263,7 +251,7 @@ export default function CallStats() {
         return acc
       }, {} as Record<string, number>)
 
-      const earningsDistribution = project.custom_rates ? project.custom_rates.map(rate => ({
+      const earningsDistribution = project.custom_rates ? project.custom_rates.map((rate: { minDuration: number; maxDuration: number; rate: number }) => ({
         range: `${rate.minDuration}-${rate.maxDuration} Sek.`,
         count: projectCalls.filter(call => call.Duration >= rate.minDuration && call.Duration <= rate.maxDuration).length,
         earnings: projectCalls.filter(call => call.Duration >= rate.minDuration && call.Duration <= rate.maxDuration)
@@ -280,7 +268,7 @@ export default function CallStats() {
         earningsDistribution
       }
     })
-  }, [calls, projects, user])
+  }, [calls, projects, user, getProjectForCall]);
 
   const unassignedStats = useMemo(() => {
     const userCalls = calls.filter(call => call.user_id === user?.id);
@@ -450,7 +438,7 @@ export default function CallStats() {
                                                    stat.payment_model === 'perMinute' ? 'Pro Minute' : 
                                                    stat.payment_model === 'perCall' ? 'Pro Anruf' : 'Unbekannt' },
                             ...(stat.payment_model === 'custom' ? 
-                              stat.custom_rates?.map((rate: any) => ({
+                              stat.custom_rates?.map((rate: { minDuration: number; maxDuration: number; rate: number }) => ({
                                 label: `${rate.minDuration} - ${rate.maxDuration} Sek.`,
                                 value: formatCurrency(rate.rate),
                               })) || [] : 
@@ -545,7 +533,7 @@ export default function CallStats() {
   )
 }
 
-function StatCard({ icon, title, items }: {icon: any; title: string; items: {label: string; value: string | number}[]}) {
+function StatCard({ icon, title, items }: {icon: React.ReactNode; title: string; items: {label: string; value: string | number}[]}) {
   return (
     <Card className="overflow-hidden">
       <CardHeader className="bg-gray-50 border-b">
