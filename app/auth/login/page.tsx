@@ -29,7 +29,7 @@ export default function LoginPage() {
       } else {
         setMessage('Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.');
       }
-    } catch (_) {
+    } catch {
       setMessage('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
     }
   };
@@ -98,3 +98,4 @@ export default function LoginPage() {
     </div>
   )
 }
+
