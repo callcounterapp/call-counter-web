@@ -2,6 +2,7 @@
 
 import { useAuth, AuthProvider } from '../contexts/AuthContext'
 import { redirect } from 'next/navigation'
+import { useEffect } from 'react'
 
 function AdminLayoutContent({
   children,
@@ -10,13 +11,14 @@ function AdminLayoutContent({
 }) {
   const { user, loading } = useAuth()
 
+  useEffect(() => {
+    if (!loading && (!user || user.role !== 'admin')) {
+      redirect('/')
+    }
+  }, [user, loading])
+
   if (loading) {
     return <div>Laden...</div>
-  }
-
-  // Überprüfe ob der Benutzer ein Admin ist
-  if (!user || user.role !== 'admin') {
-    redirect('/')
   }
 
   return <>{children}</>

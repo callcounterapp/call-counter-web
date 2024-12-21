@@ -35,6 +35,13 @@ interface InfoTextProps {
 
 export default function ProjectSetup({ projects, setProjects }: ProjectSetupProps) {
   const { user } = useAuth()
+  
+  const [localProjects, setLocalProjects] = useState<Project[]>([])
+
+  useEffect(() => {
+    setLocalProjects(Array.isArray(projects) ? projects : [])
+  }, [projects])
+
   const [newProject, setNewProject] = useState({
     id: null as string | null,
     internalName: '',
@@ -54,19 +61,21 @@ export default function ProjectSetup({ projects, setProjects }: ProjectSetupProp
         .from('projects')
         .select('*')
         .eq('user_id', user?.id)
-  
+
       if (error) throw error
       
-      setProjects(data || [])
+      setLocalProjects(data || [])
     } catch (error) {
       console.error('Error fetching projects:', error)
       alert('Fehler beim Laden der Projekte. Bitte versuchen Sie es erneut.')
     }
-  }, [user, setProjects])
+  }, [user])
 
   useEffect(() => {
-    fetchProjects()
-  }, [user, fetchProjects])
+    if (user) {
+      fetchProjects()
+    }
+  }, [user])
 
   const resetForm = () => {
     setNewProject({
@@ -81,6 +90,15 @@ export default function ProjectSetup({ projects, setProjects }: ProjectSetupProp
       roundUpMinutes: true,
     })
     setEditMode(false)
+  }
+
+  const updateProjects = (newProjects: Project[]) => {
+    setLocalProjects(newProjects)
+    if (typeof setProjects === 'function') {
+      setProjects(newProjects)
+    } else {
+      console.error('setProjects ist keine Funktion. Lokaler Zustand wurde aktualisiert, aber der übergeordnete Zustand konnte nicht aktualisiert werden.')
+    }
   }
 
   const addOrUpdateProject = async () => {
@@ -128,7 +146,7 @@ export default function ProjectSetup({ projects, setProjects }: ProjectSetupProp
       }
 
       if (result) {
-        setProjects(prevProjects => {
+        setLocalProjects(prevProjects => {
           const updatedProjects = editMode
             ? prevProjects.map(p => p.id === result.id ? result : p)
             : [...prevProjects, result];
@@ -175,7 +193,8 @@ export default function ProjectSetup({ projects, setProjects }: ProjectSetupProp
         
         if (error) throw error
         
-        setProjects(projects.filter(project => project.id !== id))
+        const updatedProjects = localProjects.filter(project => project.id !== id)
+        setLocalProjects(updatedProjects)
       } catch (error) {
         console.error('Error deleting project:', error)
         alert('Fehler beim Löschen des Projekts. Bitte versuchen Sie es erneut.')
@@ -381,11 +400,11 @@ export default function ProjectSetup({ projects, setProjects }: ProjectSetupProp
           <CardTitle>Vorhandene Projekte</CardTitle>
         </CardHeader>
         <CardContent>
-          {projects.length === 0 ? (
+          {Array.isArray(localProjects) && localProjects.length === 0 ? (
             <p className="text-center text-gray-500">Keine Projekte vorhanden.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {projects.map((project) => (
+              {Array.isArray(localProjects) && localProjects.map((project) => (
                 <Card key={project.id} className="bg-gray-50 shadow-md hover:shadow-lg transition-shadow duration-300">
                   <CardHeader className="bg-gray-50 border-b">
                     <CardTitle className="text-lg font-semibold flex justify-between items-center">
