@@ -52,34 +52,20 @@ type MonthlyData = {
   [key: string]: MonthlyEntry[];
 }
 
-interface PdfEventCallback {
-  (data: unknown): void;
-}
-
-interface PdfEvents {
-  subscribe: (event: string, callback: PdfEventCallback) => void;
-  unsubscribe: (event: string, callback: PdfEventCallback) => void;
-  publish: (event: string, data: unknown) => void;
-  getTopics: () => string[];
-}
-
-interface ExtendedJsPDF extends jsPDF {
+// Remove the complex type definitions and use a simpler approach
+type ExtendedJsPDF = jsPDF & {
   internal: {
-    events: PdfEvents;
-    scaleFactor: number;
     pageSize: {
       width: number;
-      getWidth: () => number;
       height: number;
-      getHeight: () => number;
     };
-    pages: number[];
-    getEncryptor: (objectId: number) => (data: string) => string;
+    pages: string[];
     lastAutoTable?: {
       finalY: number;
     };
   };
-}
+};
+
 
 const formatMonthYear = (dateString: string) => {
   const [year, month] = dateString.split('-');
@@ -447,4 +433,3 @@ export default function MonthlyBilling() {
     </div>
   )
 }
-
