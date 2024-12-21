@@ -140,8 +140,8 @@ export default function ProjectSetup({ projects, setProjects }: ProjectSetupProp
         throw new Error('Keine Daten von der Datenbank zurückgegeben.');
       }
     } catch (error) {
-      console.error('Error saving project:', error)
-      alert(`Fehler beim ${editMode ? 'Aktualisieren' : 'Erstellen'} des Projekts: ${error.message}`);
+      console.error('Error saving project:', error);
+      alert(`Fehler beim ${editMode ? 'Aktualisieren' : 'Erstellen'} des Projekts: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
     }
   }
 
