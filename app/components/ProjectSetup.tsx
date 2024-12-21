@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
@@ -24,11 +24,7 @@ export default function ProjectSetup({ projects, setProjects }) {
   })
   const [editMode, setEditMode] = useState(false)
 
-  useEffect(() => {
-    fetchProjects()
-  }, [user])
-
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('projects')
@@ -42,7 +38,11 @@ export default function ProjectSetup({ projects, setProjects }) {
       console.error('Error fetching projects:', error)
       alert('Fehler beim Laden der Projekte. Bitte versuchen Sie es erneut.')
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    fetchProjects()
+  }, [user, fetchProjects])
 
   const resetForm = () => {
     setNewProject({

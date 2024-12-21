@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React from 'react';
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { UserCircle, CheckCircle, XCircle, PlayCircle, PauseCircle, Bell, ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -77,11 +78,7 @@ export default function UsersList() {
   const [notification, setNotification] = useState<NotificationProps | null>(null)
   const router = useRouter()
 
-  useEffect(() => {
-    loadUsers()
-  }, [])
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -95,7 +92,11 @@ export default function UsersList() {
 
     setUsers(data || [])
     setLoading(false)
-  }
+  }, []);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const showNotification = (message: string, type: 'success' | 'error' | 'info') => {
     setNotification({ message, type })

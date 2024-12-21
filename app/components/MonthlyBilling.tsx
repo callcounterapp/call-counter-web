@@ -152,11 +152,12 @@ export default function MonthlyBilling() {
     }
   }
 
-  const getProjectForCall = (call: Call): Project | undefined => {
-    return projects.find(project => call.name === project.internal_name);
-  }
 
   useEffect(() => {
+    const getProjectForCall = (call: Call): Project | undefined => {
+      return projects.find(project => call.name === project.internal_name);
+    }
+
     const data: MonthlyData = {}
     calls.forEach(call => {
       const date = parseGermanDate(call.formattedtime);
@@ -293,7 +294,7 @@ export default function MonthlyBilling() {
     })
 
     // Zusammenfassung
-    const finalY = (doc as any).lastAutoTable.finalY || 85
+    const finalY = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || 85
     doc.setFillColor(248, 248, 248)
     doc.rect(14, finalY + 10, doc.internal.pageSize.width - 28, 20, 'F')
     doc.setTextColor(60, 60, 60)

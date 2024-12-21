@@ -139,7 +139,7 @@ export default function CallStats() {
     return (amount / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
   }
 
-  const calculateEarnings = (call: Call, project: Project): number => {
+  const calculateEarnings = useCallback((call: Call, project: Project): number => {
     if (!project || !call.Duration) {
       console.log('No project found for call or no duration:', call);
       return 0;
@@ -193,7 +193,7 @@ export default function CallStats() {
 
     console.log(`Final earnings for call ${call.id}: ${earnings} cents`);
     return earnings;
-  };
+  }, []);
 
   const getProjectForCall = useCallback((call: Call): Project | undefined => {
     if (!call.internal_name) {
@@ -205,13 +205,13 @@ export default function CallStats() {
     return project;
   }, [projects]);
 
-  const getDurationCategory = (duration: number): string => {
+  const getDurationCategory = useCallback((duration: number): string => {
     if (duration < 30) return '0-30 Sek.'
     if (duration < 60) return '31-60 Sek.'
     if (duration < 120) return '1-2 Min.'
     if (duration < 300) return '2-5 Min.'
     return '5+ Min.'
-  }
+  }, []);
 
   const projectStats = useMemo(() => {
     console.log('Calculating project stats with:', { calls, projects, userId: user?.id });
@@ -265,7 +265,7 @@ export default function CallStats() {
         earningsDistribution
       }
     })
-  }, [calls, projects, user, calculateEarnings, getDurationCategory]);
+  }, [calls, user, calculateEarnings, getDurationCategory]);
 
   const unassignedStats = useMemo(() => {
     const userCalls = calls.filter(call => call.user_id === user?.id);
@@ -284,7 +284,7 @@ export default function CallStats() {
         return acc
       }, {} as Record<string, number>)
     }
-  }, [calls, projects, user, getProjectForCall, getDurationCategory]);
+  }, [calls, user, getProjectForCall, getDurationCategory]);
 
   const totalStats = useMemo(() => ({
     totalCalls: calls.filter(call => call.user_id === user?.id).length,
