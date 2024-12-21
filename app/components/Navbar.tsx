@@ -7,7 +7,10 @@ import { Button } from './ui/button'
 export function Navbar() {
   const { user, logout } = useAuth()
 
-  console.log('Current user in Navbar:', user)
+ 
+ 
+ 
+ 
 
   return (
     <nav className="bg-gray-800 text-white p-4">
