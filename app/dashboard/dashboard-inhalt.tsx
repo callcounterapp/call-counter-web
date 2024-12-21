@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
@@ -12,16 +12,48 @@ import CallStats from '../components/CallStats'
 import DailyOffer from '../components/DailyOffer'
 import MonthlyBilling from '../components/MonthlyBilling'
 import CompanySettings from '../components/CompanySettings'
+import { supabase } from '@/lib/supabaseClient'
+
+interface Project {
+  id: string;
+  internal_name: string;
+  display_name: string;
+  payment_model: 'perMinute' | 'perCall' | 'custom';
+  min_duration: number;
+  round_up_minutes: boolean;
+  per_minute_rate?: number;
+  per_call_rate?: number;
+  custom_rates?: { minDuration: number; maxDuration: number; rate: number }[];
+  user_id: string;
+}
 
 export default function DashboardInhalt() {
   const { user } = useAuth()
   const router = useRouter()
+  const [projects, setProjects] = useState<Project[]>([])
+
+  const fetchProjects = useCallback(async () => {
+    if (user?.id) {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Error fetching projects:', error)
+      } else {
+        setProjects(data as Project[] || [])
+      }
+    }
+  }, [user])
 
   useEffect(() => {
     if (!user) {
       router.push('/auth/login')
+    } else {
+      fetchProjects()
     }
-  }, [user, router])
+  }, [user, router, fetchProjects])
 
   if (!user) {
     return null
@@ -70,7 +102,7 @@ export default function DashboardInhalt() {
           <CallStats />
         </TabsContent>
         <TabsContent value="projects">
-          <ProjectSetup />
+          <ProjectSetup projects={projects} />
         </TabsContent>
         <TabsContent value="dailyoffer">
           <DailyOffer />

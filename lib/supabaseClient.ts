@@ -23,7 +23,7 @@ export function parseProjectRates(project: Record<string, unknown>) {
     }
 
     // Ensure rates are numbers
-    customRates = customRates.map(rate => ({
+    customRates = customRates.map((rate: { minDuration?: number; minduration?: number; maxDuration?: number; maxduration?: number; rate?: number }) => ({
       minDuration: Number(rate.minDuration || rate.minduration || 0),
       maxDuration: Number(rate.maxDuration || rate.maxduration || 0),
       rate: Number(rate.rate || 0)
