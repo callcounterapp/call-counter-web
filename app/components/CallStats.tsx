@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
@@ -14,7 +14,7 @@ import { useAuth } from '../contexts/AuthContext'
 interface Call {
   id: number
   type: string
-  name: string  // Dies ist der Name des Projekts für den Anruf
+  name: string
   number: string
   formattedtime: string
   formattedduration: string
@@ -77,14 +77,12 @@ export default function CallStats() {
         if (callsError) throw callsError;
         console.log('Raw calls data:', callsData);
         
-        // Process calls data - use the name field as internal_name
         const processedCalls = (callsData || []).map(call => ({
           ...call,
           Duration: parseDuration(call.formattedduration),
-          internal_name: call.name // Hier verwenden wir das name-Feld als internal_name
+          internal_name: call.name
         }));
 
-        // Process projects data
         const processedProjects = (projectsData || []).map(project => ({
           ...project,
           custom_rates: typeof project.custom_rates === 'string' 
@@ -129,7 +127,6 @@ export default function CallStats() {
 
     fetchData();
   }, [user]);
-
 
   const formatDuration = (duration: number): string => {
     if (!duration && duration !== 0) return '-';
@@ -198,7 +195,7 @@ export default function CallStats() {
     return earnings;
   };
 
-  const getProjectForCall = (call: Call): Project | undefined => {
+  const getProjectForCall = useCallback((call: Call): Project | undefined => {
     if (!call.internal_name) {
       console.log(`Call ${call.id} has no internal_name`);
       return undefined;
@@ -206,7 +203,7 @@ export default function CallStats() {
     const project = projects.find(project => call.internal_name === project.internal_name);
     console.log(`Looking for project with internal_name ${call.internal_name}:`, project);
     return project;
-  };
+  }, [projects]);
 
   const getDurationCategory = (duration: number): string => {
     if (duration < 30) return '0-30 Sek.'
@@ -268,7 +265,7 @@ export default function CallStats() {
         earningsDistribution
       }
     })
-  }, [calls, user, projects]); // Update 1: Added 'projects' to the dependency array
+  }, [calls, projects, user, calculateEarnings, getDurationCategory]);
 
   const unassignedStats = useMemo(() => {
     const userCalls = calls.filter(call => call.user_id === user?.id);
@@ -287,14 +284,14 @@ export default function CallStats() {
         return acc
       }, {} as Record<string, number>)
     }
-  }, [calls, user, getProjectForCall]); // Update 2: Removed 'projects' from the dependency array
+  }, [calls, projects, user, getProjectForCall, getDurationCategory]);
 
   const totalStats = useMemo(() => ({
     totalCalls: calls.filter(call => call.user_id === user?.id).length,
     billableCalls: projectStats.reduce((sum, stat) => sum + stat.billableCalls, 0),
     totalEarnings: projectStats.reduce((sum, stat) => sum + stat.totalEarnings, 0),
     totalDuration: calls.filter(call => call.user_id === user?.id).reduce((sum, call) => sum + (call.Duration || 0), 0),
-  }), [calls, projectStats, user])
+  }), [calls, projectStats, user]);
 
   const activeStats = useMemo(() => {
     const projectsWithCalls = projectStats
@@ -310,7 +307,7 @@ export default function CallStats() {
 
     console.log('Active stats:', projectsWithCalls);
     return projectsWithCalls;
-  }, [projectStats, unassignedStats])
+  }, [projectStats, unassignedStats]);
 
   if (loading) return <div>Lade Statistiken...</div>
   if (error) {
