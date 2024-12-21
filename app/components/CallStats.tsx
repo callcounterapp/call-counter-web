@@ -14,13 +14,14 @@ import { useAuth } from '../contexts/AuthContext'
 interface Call {
   id: number
   type: string
-  name: string
+  name: string  // Dies ist der Name des Projekts für den Anruf
   number: string
   formattedtime: string
   formattedduration: string
   info: string
   Duration?: number
   user_id: string
+  internal_name: string // Hinzugefügt
 }
 
 interface Project {
