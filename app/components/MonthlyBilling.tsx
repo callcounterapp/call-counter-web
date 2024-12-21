@@ -52,17 +52,6 @@ type MonthlyData = {
   [key: string]: MonthlyEntry[];
 }
 
-interface PdfEventCallback {
-  (data: unknown): void;
-}
-
-interface PdfEvents {
-  subscribe: (event: string, callback: PdfEventCallback) => void;
-  unsubscribe: (event: string, callback: PdfEventCallback) => void;
-  publish: (event: string, data: unknown) => void;
-  getTopics: () => string[];
-}
-
 interface AutoTableOptions {
   head: string[][];
   body: string[][];
