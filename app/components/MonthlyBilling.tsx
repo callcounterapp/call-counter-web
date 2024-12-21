@@ -52,13 +52,19 @@ type MonthlyData = {
   [key: string]: MonthlyEntry[];
 }
 
+interface PdfEventCallback {
+  (data: unknown): void;
+}
+
+interface PdfEvents {
+  subscribe: (event: string, callback: PdfEventCallback) => void;
+  unsubscribe: (event: string, callback: PdfEventCallback) => void;
+  publish: (event: string, data: unknown) => void;
+}
+
 interface ExtendedJsPDF extends jsPDF {
   internal: {
-    events: {
-      subscribe: (event: string, callback: Function) => void;
-      unsubscribe: (event: string, callback: Function) => void;
-      publish: (event: string, data: any) => void;
-    };
+    events: PdfEvents;
     scaleFactor: number;
     pageSize: {
       width: number;
