@@ -168,7 +168,8 @@ export default function CallStats() {
         break;
 
       case 'custom':
-        if (project.custom_rates?.length > 0) {
+        // Hier ist die Korrektur
+        if (project.custom_rates && Array.isArray(project.custom_rates) && project.custom_rates.length > 0) {
           const sortedRates = [...project.custom_rates].sort((a, b) => a.maxDuration - b.maxDuration);
           console.log('Custom rates:', sortedRates);
 
