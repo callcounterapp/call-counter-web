@@ -1,21 +1,45 @@
-import { useState, useEffect, useCallback } from 'react'
+'use client'
+
+import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "./ui/select"
 import { Info, Edit, Trash2, Plus, BarChart } from 'lucide-react'
-import { Checkbox } from "./ui/checkbox";
+import { Checkbox } from "./ui/checkbox"
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 
-export default function ProjectSetup({ projects, setProjects }) {
+interface Project {
+  id: string;
+  internal_name: string;
+  display_name: string;
+  payment_model: 'perMinute' | 'perCall' | 'custom';
+  min_duration: number;
+  round_up_minutes: boolean;
+  per_minute_rate?: number;
+  per_call_rate?: number;
+  custom_rates?: { minDuration: number; maxDuration: number; rate: number }[];
+  user_id: string;
+}
+
+interface ProjectSetupProps {
+  projects: Project[];
+  setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
+}
+
+interface InfoTextProps {
+  children: React.ReactNode;
+}
+
+export default function ProjectSetup({ projects, setProjects }: ProjectSetupProps) {
   const { user } = useAuth()
   const [newProject, setNewProject] = useState({
-    id: null,
+    id: null as string | null,
     internalName: '',
     displayName: '',
-    paymentModel: 'custom',
+    paymentModel: 'custom' as 'custom' | 'perMinute' | 'perCall',
     customRates: [{ minDuration: '', maxDuration: '', rate: '' }],
     minDuration: '',
     perMinuteRate: '',
@@ -88,7 +112,7 @@ export default function ProjectSetup({ projects, setProjects }) {
           .from('projects')
           .update(projectToSave)
           .eq('id', newProject.id)
-          .eq('user_id', user?.id)  // Stellen Sie sicher, dass nur Projekte des aktuellen Benutzers aktualisiert werden
+          .eq('user_id', user?.id)
           .select()
         
         if (error) throw error
@@ -121,9 +145,9 @@ export default function ProjectSetup({ projects, setProjects }) {
     }
   }
 
-  const editProject = (project) => {
+  const editProject = (project: Project) => {
     setNewProject({
-      ...project,
+      id: project.id,
       internalName: project.internal_name,
       displayName: project.display_name,
       paymentModel: project.payment_model,
@@ -133,26 +157,25 @@ export default function ProjectSetup({ projects, setProjects }) {
         rate: (rate.rate / 100).toFixed(2).replace('.', ',') || ''
       })) : [],
       minDuration: project.min_duration?.toString() || '',
-      perMinuteRate: (project.per_minute_rate / 100).toFixed(2).replace('.', ',') || '',
-      perCallRate: (project.per_call_rate / 100).toFixed(2).replace('.', ',') || '',
+      perMinuteRate: (project.per_minute_rate ? project.per_minute_rate / 100 : 0).toFixed(2).replace('.', ',') || '',
+      perCallRate: (project.per_call_rate ? project.per_call_rate / 100 : 0).toFixed(2).replace('.', ',') || '',
       roundUpMinutes: project.round_up_minutes,
     })
     setEditMode(true)
   }
 
-  const deleteProject = async (id) => {
+  const deleteProject = async (id: string) => {
     if (window.confirm('Sind Sie sicher, dass Sie dieses Projekt löschen möchten?')) {
       try {
         const { error } = await supabase
           .from('projects')
           .delete()
           .eq('id', id)
-          .eq('user_id', user?.id)  // Stellen Sie sicher, dass nur Projekte des aktuellen Benutzers gelöscht werden
+          .eq('user_id', user?.id)
         
         if (error) throw error
         
-        const updatedProjects = projects.filter(project => project.id !== id)
-        setProjects(updatedProjects)
+        setProjects(projects.filter(project => project.id !== id))
       } catch (error) {
         console.error('Error deleting project:', error)
         alert('Fehler beim Löschen des Projekts. Bitte versuchen Sie es erneut.')
@@ -167,25 +190,25 @@ export default function ProjectSetup({ projects, setProjects }) {
     })
   }
 
-  const updateCustomRate = (index, field, value) => {
+  const updateCustomRate = (index: number, field: string, value: string) => {
     const updatedRates = [...newProject.customRates]
     updatedRates[index] = { ...updatedRates[index], [field]: value }
     setNewProject({ ...newProject, customRates: updatedRates })
   }
 
-  const removeCustomRate = (index) => {
+  const removeCustomRate = (index: number) => {
     const updatedRates = newProject.customRates.filter((_, i) => i !== index)
     setNewProject({ ...newProject, customRates: updatedRates })
   }
 
-  const InfoText = ({ children }) => (
+  const InfoText = ({ children }: InfoTextProps) => (
     <div className="flex items-start mt-2 mb-4 text-sm text-gray-500">
       <Info className="mr-1 h-4 w-4 text-blue-500 flex-shrink-0" />
       <p className="flex-1">{children}</p>
     </div>
   )
 
-  const formatCurrency = (amount) => {
+  const formatCurrency = (amount: number) => {
     const euros = Math.floor(amount / 100);
     const cents = amount % 100;
     return `${euros},${cents.toString().padStart(2, '0')} €`;
@@ -244,7 +267,7 @@ export default function ProjectSetup({ projects, setProjects }) {
                 <Checkbox
                   id="roundUpMinutes"
                   checked={newProject.roundUpMinutes}
-                  onCheckedChange={(checked) => setNewProject({ ...newProject, roundUpMinutes: checked })}
+                  onCheckedChange={(checked) => setNewProject({ ...newProject, roundUpMinutes: checked as boolean })}
                 />
                 <Label htmlFor="roundUpMinutes">Minuten aufrunden</Label>
               </div>
@@ -399,17 +422,17 @@ export default function ProjectSetup({ projects, setProjects }) {
                         <p className="text-sm text-gray-800 mt-2">
                           <span className="font-medium">Minuten aufrunden:</span> {project.round_up_minutes ? 'Ja' : 'Nein'}
                         </p>
-                        {project.payment_model === 'custom' && (
+                        {project.payment_model === 'custom' && project.custom_rates && (
                           <p className="text-sm text-gray-600 mt-1">
                             <span className="font-medium">Vergütungsstufen:</span> {project.custom_rates.length}
                           </p>
                         )}
-                        {project.payment_model === 'perMinute' && (
+                        {project.payment_model === 'perMinute' && project.per_minute_rate && (
                           <p className="text-sm text-gray-600 mt-1">
                             <span className="font-medium">Vergütung pro Minute:</span> {formatCurrency(project.per_minute_rate)}
                           </p>
                         )}
-                        {project.payment_model === 'perCall' && (
+                        {project.payment_model === 'perCall' && project.per_call_rate && (
                           <p className="text-sm text-gray-600 mt-1">
                             <span className="font-medium">Vergütung pro Anruf:</span> {formatCurrency(project.per_call_rate)}
                           </p>
@@ -420,7 +443,7 @@ export default function ProjectSetup({ projects, setProjects }) {
                           <span className="font-medium">Mindestdauer:</span> {project.min_duration} Sek.
                         </p>
                       </div>
-                      {project.payment_model === 'custom' && (
+                      {project.payment_model === 'custom' && project.custom_rates && (
                         <div className="bg-white p-3 rounded-md shadow-sm">
                           <h4 className="text-sm font-semibold mb-2 flex items-center">
                             <BarChart className="h-4 w-4 mr-2 text-green-500" />
@@ -430,7 +453,7 @@ export default function ProjectSetup({ projects, setProjects }) {
                             {project.custom_rates.map((rate, index) => (
                               <div key={index} className="flex justify-between text-sm">
                                 <span>{rate.minDuration}-{rate.maxDuration} Sek.</span>
-                                <span className="font-medium">{(rate.rate / 100).toFixed(2).replace('.', ',')} €</span>
+                                <span className="font-medium">{formatCurrency(rate.rate)}</span>
                               </div>
                             ))}
                           </div>
@@ -447,3 +470,4 @@ export default function ProjectSetup({ projects, setProjects }) {
     </div>
   )
 }
+
