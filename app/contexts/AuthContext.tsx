@@ -72,7 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setupAuth()
   }, [])
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<{ user: User | null; error: Error | null }> => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -97,9 +97,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('User role set:', role);
         return { user: data.user, error: null };
       }
+      return { user: null, error: new Error('Login failed') };
     } catch (error) {
       console.error('Login error:', error);
-      return { user: null, error };
+      return { user: null, error: error instanceof Error ? error : new Error('Unknown error') };
     }
   };
 
@@ -116,17 +117,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (email: string, password: string, name: string, company: string) => {
     try {
-      const { user, error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email,
         password: password
       })
       if (error) throw error
-      //create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([{ id: user.id, name: name, company: company }])
-      if (profileError) throw profileError
-      return { message: 'Registration successful' }
+      if (data.user) {
+        //create profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{ id: data.user.id, name: name, company: company }])
+        if (profileError) throw profileError
+        return { message: 'Registration successful' }
+      } else {
+        throw new Error('User registration failed')
+      }
     } catch (error) {
       console.error('Registration error:', error)
       return { message: 'Registration failed' }
