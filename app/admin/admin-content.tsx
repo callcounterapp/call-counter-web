@@ -11,9 +11,12 @@ const supabase = createClient(
 )
 
 interface PendingUser {
-  id: string
-  email: string
-  created_at: string
+  id: string;
+  email: string;
+  created_at: string;
+  status: string;
+  role: string;
+  full_name?: string;
 }
 
 export default function AdminContent() {
@@ -29,7 +32,7 @@ export default function AdminContent() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, email, created_at')
+        .select('id, email, created_at, status, role, full_name')
         .eq('status', 'pending')
 
       if (error) {
