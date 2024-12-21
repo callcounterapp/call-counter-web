@@ -265,7 +265,7 @@ export default function CallStats() {
         earningsDistribution
       }
     })
-  }, [calls, projects, user]);
+  }, [calls, user]);
 
   const unassignedStats = useMemo(() => {
     const userCalls = calls.filter(call => call.user_id === user?.id);
