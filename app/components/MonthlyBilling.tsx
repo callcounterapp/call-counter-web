@@ -54,10 +54,22 @@ type MonthlyData = {
 
 interface ExtendedJsPDF extends jsPDF {
   internal: {
-    pages: string[];
+    events: {
+      subscribe: (event: string, callback: Function) => void;
+      unsubscribe: (event: string, callback: Function) => void;
+      publish: (event: string, data: any) => void;
+    };
+    scaleFactor: number;
     pageSize: {
       width: number;
+      getWidth: () => number;
       height: number;
+      getHeight: () => number;
+    };
+    pages: number[];
+    getEncryptor: (objectId: number) => (data: string) => string;
+    lastAutoTable?: {
+      finalY: number;
     };
   };
 }
@@ -215,7 +227,7 @@ export default function MonthlyBilling() {
   }
 
   const exportToPDF = async () => {
-    const doc = new jsPDF()
+    const doc = new jsPDF() as ExtendedJsPDF
     const monthDate = new Date(parseInt(selectedMonth.split('-')[0]), parseInt(selectedMonth.split('-')[1]) - 1, 1);
     const monthName = monthDate.toLocaleString('de-DE', { month: 'long', year: 'numeric' });
     const invoiceNumber = `INV-${selectedMonth}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`
@@ -269,16 +281,20 @@ export default function MonthlyBilling() {
     }
 
     const addFooter = () => {
-      const pageCount = (doc as ExtendedJsPDF).internal.pages.length
-      doc.setFontSize(8)
-      doc.setTextColor(100)
+      const pageCount = doc.internal.pages.length -1;
+      doc.setFontSize(8);
+      doc.setTextColor(100);
       for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i)
-        doc.text(`Seite ${i} von ${pageCount}`, 14, doc.internal.pageSize.height - 10)
-        doc.text(`${companyData.name} • ${companyData.street} • ${companyData.zipCode} ${companyData.city}`, 
-          doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' })
+        doc.setPage(i);
+        doc.text(`Seite ${i} von ${pageCount}`, 14, doc.internal.pageSize.height - 10);
+        doc.text(
+          `${companyData.name} • ${companyData.street} • ${companyData.zipCode} ${companyData.city}`,
+          doc.internal.pageSize.width / 2,
+          doc.internal.pageSize.height - 10,
+          { align: 'center' }
+        );
       }
-    }
+    };
 
     // PDF-Erstellung
     addHeader()
@@ -304,7 +320,7 @@ export default function MonthlyBilling() {
     })
 
     // Zusammenfassung
-    const finalY = (doc as ExtendedJsPDF).lastAutoTable.finalY || 85
+    const finalY = doc.internal.lastAutoTable?.finalY || 85
     doc.setFillColor(248, 248, 248)
     doc.rect(14, finalY + 10, doc.internal.pageSize.width - 28, 20, 'F')
     doc.setTextColor(60, 60, 60)
