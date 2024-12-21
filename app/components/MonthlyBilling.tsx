@@ -52,6 +52,16 @@ type MonthlyData = {
   [key: string]: MonthlyEntry[];
 }
 
+interface ExtendedJsPDF extends jsPDF {
+  internal: {
+    pages: string[];
+    pageSize: {
+      width: number;
+      height: number;
+    };
+  };
+}
+
 const formatMonthYear = (dateString: string) => {
   const [year, month] = dateString.split('-');
   const date = new Date(parseInt(year), parseInt(month) - 1, 1);
@@ -259,7 +269,7 @@ export default function MonthlyBilling() {
     }
 
     const addFooter = () => {
-      const pageCount = (doc as any).internal.pages.length
+      const pageCount = (doc as ExtendedJsPDF).internal.pages.length
       doc.setFontSize(8)
       doc.setTextColor(100)
       for (let i = 1; i <= pageCount; i++) {
@@ -294,7 +304,7 @@ export default function MonthlyBilling() {
     })
 
     // Zusammenfassung
-    const finalY = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || 85
+    const finalY = (doc as ExtendedJsPDF).lastAutoTable.finalY || 85
     doc.setFillColor(248, 248, 248)
     doc.rect(14, finalY + 10, doc.internal.pageSize.width - 28, 20, 'F')
     doc.setTextColor(60, 60, 60)
