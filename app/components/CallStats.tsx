@@ -14,14 +14,14 @@ import { useAuth } from '../contexts/AuthContext'
 interface Call {
   id: number
   type: string
-  name: string  // Dies ist der Name des Projekts für den Anruf
+  name: string
   number: string
   formattedtime: string
   formattedduration: string
   info: string
   Duration?: number
   user_id: string
-  internal_name: string // Hinzugefügt
+  internal_name: string
 }
 
 interface Project {
@@ -42,7 +42,8 @@ export default function CallStats() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState('all') // Update 1
+  const [activeTab, setActiveTab] = useState('all')
+  const [selectedDurationFilter, setSelectedDurationFilter] = useState('all')
   const { toast } = useToast()
   const { user } = useAuth()
 
@@ -87,7 +88,6 @@ export default function CallStats() {
             ? JSON.parse(project.custom_rates) 
             : project.custom_rates
         }));
-
 
         setCalls(processedCalls);
         setProjects(processedProjects);
@@ -145,7 +145,6 @@ export default function CallStats() {
         break;
 
       case 'custom':
-        // Hier ist die Korrektur
         if (project.custom_rates && Array.isArray(project.custom_rates) && project.custom_rates.length > 0) {
           const sortedRates = [...project.custom_rates].sort((a, b) => a.maxDuration - b.maxDuration);
           console.log('Custom rates:', sortedRates);
@@ -228,8 +227,8 @@ export default function CallStats() {
 
       const earningsDistribution = project.custom_rates ? project.custom_rates.map((rate: { minDuration: number; maxDuration: number; rate: number }) => ({
         range: `${rate.minDuration}-${rate.maxDuration} Sek.`,
-        count: projectCalls.filter(call => call.Duration >= rate.minDuration && call.Duration <= rate.maxDuration).length,
-        earnings: projectCalls.filter(call => call.Duration >= rate.minDuration && call.Duration <= rate.maxDuration)
+        count: projectCalls.filter(call => call.Duration != null && call.Duration >= rate.minDuration && call.Duration <= rate.maxDuration).length,
+        earnings: projectCalls.filter(call => call.Duration != null && call.Duration >= rate.minDuration && call.Duration <= rate.maxDuration)
                            .reduce((sum, call) => sum + calculateEarnings(call, project), 0)
       })) : []
 
@@ -312,7 +311,7 @@ export default function CallStats() {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6"> {/* Update 2 */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="bg-gray-100 p-1 rounded-lg flex flex-wrap gap-2">
               <TabsTrigger 
                 value="all"
