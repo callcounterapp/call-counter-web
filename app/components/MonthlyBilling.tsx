@@ -259,7 +259,7 @@ export default function MonthlyBilling() {
     }
 
     const addFooter = () => {
-      const pageCount = doc.internal.getNumberOfPages()
+      const pageCount = (doc as any).internal.pages.length
       doc.setFontSize(8)
       doc.setTextColor(100)
       for (let i = 1; i <= pageCount; i++) {
