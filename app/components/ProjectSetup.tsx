@@ -56,11 +56,12 @@ export default function ProjectSetup({ projects, setProjects }: ProjectSetupProp
   const [editMode, setEditMode] = useState(false)
 
   const fetchProjects = useCallback(async () => {
+    if (!user?.id) return; // Früher Ausstieg, wenn kein Benutzer vorhanden ist
     try {
       const { data, error } = await supabase
         .from('projects')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
 
       if (error) throw error
       
@@ -69,13 +70,11 @@ export default function ProjectSetup({ projects, setProjects }: ProjectSetupProp
       console.error('Error fetching projects:', error)
       alert('Fehler beim Laden der Projekte. Bitte versuchen Sie es erneut.')
     }
-  }, [user])
+  }, [user?.id]) // Abhängigkeit ist nur user?.id
 
   useEffect(() => {
-    if (user) {
-      fetchProjects()
-    }
-  }, [user])
+    fetchProjects()
+  }, [fetchProjects]) // fetchProjects ist jetzt die einzige Abhängigkeit
 
   const resetForm = () => {
     setNewProject({
@@ -90,15 +89,6 @@ export default function ProjectSetup({ projects, setProjects }: ProjectSetupProp
       roundUpMinutes: true,
     })
     setEditMode(false)
-  }
-
-  const updateProjects = (newProjects: Project[]) => {
-    setLocalProjects(newProjects)
-    if (typeof setProjects === 'function') {
-      setProjects(newProjects)
-    } else {
-      console.error('setProjects ist keine Funktion. Lokaler Zustand wurde aktualisiert, aber der übergeordnete Zustand konnte nicht aktualisiert werden.')
-    }
   }
 
   const addOrUpdateProject = async () => {
@@ -347,8 +337,7 @@ export default function ProjectSetup({ projects, setProjects }: ProjectSetupProp
                 <Label htmlFor="perMinuteRate">Vergütung pro Minute (in Cent)</Label>
                 <Input
                   id="perMinuteRate"
-                  type="text"
-                  value={newProject.perMinuteRate}
+                  type="text"value={newProject.perMinuteRate}
                   onChange={(e) => setNewProject({ ...newProject, perMinuteRate: e.target.value })}
                   placeholder="Vergütung in Cent (z.B. 40,50 für 40,50 Cent)"
                 />
