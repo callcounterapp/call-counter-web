@@ -13,6 +13,7 @@ interface AuthContextType {
   loading: boolean
   login: (email: string, password: string) => Promise<{ user: User | null; error: Error | null }>
   logout: () => Promise<void>
+  register: (email: string, password: string, name: string, company: string) => Promise<{ message: string }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -113,8 +114,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('User logged out and set to null')
   }
 
+  const register = async (email: string, password: string, name: string, company: string) => {
+    try {
+      const { user, error } = await supabase.auth.signUp({
+        email: email,
+        password: password
+      })
+      if (error) throw error
+      //create profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{ id: user.id, name: name, company: company }])
+      if (profileError) throw profileError
+      return { message: 'Registration successful' }
+    } catch (error) {
+      console.error('Registration error:', error)
+      return { message: 'Registration failed' }
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   )
