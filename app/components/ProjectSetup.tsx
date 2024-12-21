@@ -26,14 +26,13 @@ interface Project {
 
 interface ProjectSetupProps {
   projects: Project[];
-  setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
 }
 
 interface InfoTextProps {
   children: React.ReactNode;
 }
 
-export default function ProjectSetup({ projects, setProjects }: ProjectSetupProps) {
+export default function ProjectSetup({ projects }: ProjectSetupProps) {
   const { user } = useAuth()
   
   const [localProjects, setLocalProjects] = useState<Project[]>([])
