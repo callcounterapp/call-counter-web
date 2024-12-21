@@ -246,11 +246,15 @@ export default function CallStats() {
 
   const unassignedStats = useMemo(() => {
     const userCalls = calls.filter(call => call.user_id === user?.id);
-    const unassignedCalls = userCalls.filter(call => !getProjectForCall(call))
+    const unassignedCalls = userCalls.filter(call => !getProjectForCall(call));
     console.log('Unassigned calls:', unassignedCalls);
     return {
       id: 'unassigned',
+      internal_name: 'unassigned',
       display_name: 'Nicht zugeordnete Anrufe',
+      payment_model: 'perCall' as const,
+      min_duration: 0,
+      round_up_minutes: false,
       totalCalls: unassignedCalls.length,
       billableCalls: 0,
       totalEarnings: 0,
@@ -259,7 +263,9 @@ export default function CallStats() {
         const category = getDurationCategory(call.Duration || 0)
         acc[category] = (acc[category] || 0) + 1
         return acc
-      }, {} as Record<string, number>)
+      }, {} as Record<string, number>),
+      earningsDistribution: [],
+      user_id: user?.id || ''
     }
   }, [calls, user, getProjectForCall, getDurationCategory]);
 
