@@ -17,7 +17,12 @@ interface User {
   role: string;
 }
 
-const PendingUsersList: React.FC = () => {
+interface PendingUsersListProps {
+  pendingUsers?: User[];
+  approveUser?: (userId: string) => Promise<void>;
+}
+
+const PendingUsersList: React.FC<PendingUsersListProps> = () => {
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
