@@ -52,8 +52,38 @@ type MonthlyData = {
   [key: string]: MonthlyEntry[];
 }
 
-// Remove the complex type definitions and use a simpler approach
+interface PdfEventCallback {
+  (data: unknown): void;
+}
+
+interface PdfEvents {
+  subscribe: (event: string, callback: PdfEventCallback) => void;
+  unsubscribe: (event: string, callback: PdfEventCallback) => void;
+  publish: (event: string, data: unknown) => void;
+  getTopics: () => string[];
+}
+
+interface AutoTableOptions {
+  head: string[][];
+  body: string[][];
+  startY: number;
+  styles?: {
+    fontSize?: number;
+    cellPadding?: number;
+  };
+  headStyles?: {
+    fillColor?: number[];
+    textColor?: number;
+    fontStyle?: string;
+  };
+  alternateRowStyles?: {
+    fillColor?: number[];
+  };
+  showFoot?: boolean;
+}
+
 type ExtendedJsPDF = jsPDF & {
+  autoTable: (options: AutoTableOptions) => void;
   internal: {
     pageSize: {
       width: number;
@@ -65,7 +95,6 @@ type ExtendedJsPDF = jsPDF & {
     };
   };
 };
-
 
 const formatMonthYear = (dateString: string) => {
   const [year, month] = dateString.split('-');
@@ -433,3 +462,4 @@ export default function MonthlyBilling() {
     </div>
   )
 }
+
