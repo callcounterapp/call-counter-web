@@ -27,7 +27,7 @@ interface ParsedCall {
   Duration: number
 }
 
-declare module './lib/supabaseClient' {
+declare module '../../lib/supabaseClient' {
   export const supabase: SupabaseClient
   export function parseProjectRates(project: Record<string, unknown>): ParsedProject | null
   export function parseCallDuration(call: Record<string, unknown>): ParsedCall | null
