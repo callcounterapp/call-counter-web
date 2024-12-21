@@ -60,6 +60,7 @@ interface PdfEvents {
   subscribe: (event: string, callback: PdfEventCallback) => void;
   unsubscribe: (event: string, callback: PdfEventCallback) => void;
   publish: (event: string, data: unknown) => void;
+  getTopics: () => string[];
 }
 
 interface ExtendedJsPDF extends jsPDF {
