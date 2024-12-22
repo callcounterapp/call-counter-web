@@ -42,6 +42,9 @@ const CallList = () => {
     setError(null)
 
     try {
+      if (!supabase) {
+        throw new Error('Supabase-Client ist nicht initialisiert');
+      }
       const { data, error: fetchError } = await supabase
         .from('calls')
         .select('*')
@@ -52,7 +55,7 @@ const CallList = () => {
 
       setCalls(data || [])
     } catch (err) {
-      console.error('Error in fetchCalls:', err)
+      console.error('Fehler in fetchCalls:', err)
       const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler beim Laden der Anrufe'
       setError(errorMessage)
       toast({
@@ -95,6 +98,9 @@ const CallList = () => {
 
   const deleteCall = async (id: number) => {
     try {
+      if (!supabase) {
+        throw new Error('Supabase-Client ist nicht initialisiert');
+      }
       const { error } = await supabase
         .from('calls')
         .delete()
@@ -108,7 +114,7 @@ const CallList = () => {
         description: "Anruf wurde erfolgreich gelöscht.",
       })
     } catch (error) {
-      console.error('Error deleting call:', error)
+      console.error('Fehler beim Löschen des Anrufs:', error)
       toast({
         title: "Fehler",
         description: "Anruf konnte nicht gelöscht werden.",
