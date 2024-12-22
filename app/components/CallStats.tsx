@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "./ui/select"
 import { Progress } from "./ui/progress"
 import { Euro, Clock, PhoneCall, PieChart, BarChart } from 'lucide-react'
-import { supabase } from "@/lib/supabaseClient"
+import { supabase } from '../../lib/supabaseClient'
 import { useToast } from "./ui/use-toast"
 import { useAuth } from '../contexts/AuthContext'
 
@@ -80,13 +80,13 @@ export default function CallStats() {
         if (callsError) throw callsError;
         console.log('Raw calls data:', callsData);
         
-        const processedCalls = (callsData || []).map(call => ({
+        const processedCalls = (callsData || []).map((call: any) => ({
           ...call,
-          Duration: parseDuration(call.formattedduration),
+          Duration: parseDuration(call.formattedduration || ''),
           internal_name: call.name
         }));
 
-        const processedProjects = (projectsData || []).map(project => ({
+        const processedProjects = (projectsData || []).map((project: any) => ({
           ...project,
           custom_rates: typeof project.custom_rates === 'string' 
             ? JSON.parse(project.custom_rates) 
