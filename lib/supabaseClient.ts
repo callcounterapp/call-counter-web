@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-let supabase;
+let supabase: SupabaseClient | undefined
 
 if (typeof window !== 'undefined') {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -14,7 +14,7 @@ if (typeof window !== 'undefined') {
   supabase = createClient(supabaseUrl, supabaseAnonKey)
 }
 
-export { supabase }
+export { supabase as supabase }
 
 // Helper function to parse project rates
 export function parseProjectRates(project: Record<string, unknown>) {
