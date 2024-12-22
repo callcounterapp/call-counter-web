@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Nur auf der Client-Seite initialisieren
 const supabase = typeof window !== 'undefined' 
