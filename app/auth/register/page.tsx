@@ -33,11 +33,15 @@ export default function RegisterPage() {
     }
 
     try {
-      const result = await register(email, password, name, company)
-      setSuccess(result.message)
-      setTimeout(() => {
-        router.push('/auth/login')
-      }, 2000)
+      const { error, message } = await register(email, password, name, company)
+      if (error) {
+        setError(message)
+      } else {
+        setSuccess(message)
+        setTimeout(() => {
+          router.push('/auth/login')
+        }, 2000)
+      }
     } catch (error) {
       console.error('Registration error:', error)
       setError('Registrierung fehlgeschlagen. Bitte versuchen Sie es später erneut.')
@@ -96,11 +100,11 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="company" className="text-gray-200">Firmenname</Label>
+              <Label htmlFor="company" className="text-gray-200">Benutzername</Label>
               <Input
                 id="company"
                 type="text"
-                placeholder="Ihre Firma"
+                placeholder="Aukb"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
                 required
@@ -112,6 +116,7 @@ export default function RegisterPage() {
               <Input
                 id="password"
                 type="password"
+				placeholder="Passwort"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -123,6 +128,7 @@ export default function RegisterPage() {
               <Input
                 id="confirmPassword"
                 type="password"
+				placeholder="Passwort wiederholen"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required

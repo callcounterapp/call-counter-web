@@ -19,19 +19,20 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMessage(''); // Vorherige Nachrichten löschen
 
     try {
-      const { user } = await login(email, password);
+      const { user, error } = await login(email, password);
       
       if (user) {
         console.log('Benutzer erfolgreich angemeldet:', user);
         router.push('/dashboard');
-      } else {
-        setMessage('Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.');
+      } else if (error) {
+        setMessage(error);
       }
     } catch (error) {
-      console.error('Login error:', error);
-      setMessage('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+      console.error('Unerwarteter Login-Fehler:', error);
+      setMessage('Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
     }
   };
 
@@ -52,7 +53,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           {message && (
-            <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 text-blue-200 rounded">
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-200 rounded">
               {message}
             </div>
           )}
@@ -62,7 +63,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="ihre@email.de"
+                placeholder="max@mustermann.at"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -74,6 +75,7 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type="password"
+                placeholder="Passwort"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

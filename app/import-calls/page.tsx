@@ -139,7 +139,11 @@ export default function ImportCallsPage() {
           }
         }
 
-        setImportStatus(`Import abgeschlossen. ${newCallsCount} neue Anrufe importiert. ${skippedCallsCount} ungültige Einträge wurden übersprungen.`)
+        if (newCallsCount === 0) {
+          setImportStatus(`Import abgeschlossen. Alle ${calls.length} Anrufe sind bereits in der Datenbank vorhanden.`)
+        } else {
+          setImportStatus(`Import abgeschlossen. ${newCallsCount} neue Anrufe wurden importiert. ${calls.length - newCallsCount} Anrufe waren bereits in der Datenbank vorhanden.`)
+        }
       } catch (error) {
         console.error('Fehler beim Importieren der Anrufe:', error)
         setImportStatus('Fehler beim Importieren der Anrufe.')
@@ -149,41 +153,47 @@ export default function ImportCallsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex flex-col items-center justify-center p-4">
-      <Card className="w-full max-w-2xl bg-white/10 backdrop-blur-sm border-gray-800">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex flex-col items-center justify-center p-4">
+      <Card className="w-full max-w-md bg-white/10 backdrop-blur-sm border-gray-700 shadow-xl">
         <CardHeader className="space-y-1">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center justify-between mb-2">
             <Link 
               href="/dashboard" 
-              className="text-gray-300 hover:text-white flex items-center gap-2"
+              className="text-blue-400 hover:text-blue-300 transition-colors duration-200 flex items-center gap-2"
             >
-              <ArrowLeft size={20} />
-              Zurück zum Dashboard
+              <ArrowLeft size={16} />
+              <span className="text-xs font-medium">Zurück</span>
             </Link>
           </div>
           <CardTitle className="text-2xl font-bold text-center text-white">Anrufe importieren</CardTitle>
-          <CardDescription className="text-center text-gray-400">
+          <CardDescription className="text-center text-gray-400 text-sm">
             Laden Sie Ihre CSV-Datei mit Anrufdaten hoch
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={(e) => {e.preventDefault(); handleImport()}} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="file-upload" className="text-gray-200">CSV-Datei auswählen</Label>
-              <Input
-                id="file-upload"
-                type="file"
-                accept=".csv"
-                onChange={handleFileChange}
-                className="bg-white/10 border-gray-700 text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
+              <Label htmlFor="file-upload" className="sr-only">CSV-Datei auswählen</Label>
+              <div className="flex items-center justify-center w-full">
+                <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-700 hover:bg-gray-600 transition-colors duration-200">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="w-8 h-8 mb-3 text-gray-400" />
+                    <p className="mb-2 text-sm text-gray-400"><span className="font-semibold">Klicken</span> oder Datei hierher ziehen</p>
+                    <p className="text-xs text-gray-500">{fileName || 'CSV-Datei auswählen'}</p>
+                  </div>
+                  <Input
+                    id="file-upload"
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             </div>
-            {fileName && (
-              <p className="text-sm text-gray-300">Ausgewählte Datei: {fileName}</p>
-            )}
             <Button 
               type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-200 flex items-center justify-center"
               disabled={!file}
             >
               <Upload className="mr-2 h-4 w-4" />
@@ -191,8 +201,8 @@ export default function ImportCallsPage() {
             </Button>
           </form>
           {importStatus && (
-            <div className="mt-4 p-3 rounded bg-blue-500/20 border border-blue-500/20">
-              <p className="text-sm text-white text-center">{importStatus}</p>
+            <div className="mt-4 p-3 rounded-lg bg-blue-500/20 border border-blue-500/30">
+              <p className="text-xs text-white text-center">{importStatus}</p>
             </div>
           )}
         </CardContent>
