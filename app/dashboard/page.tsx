@@ -34,7 +34,7 @@ export default function DashboardPage() {
   }
 
   if (!user) {
-    return null // oder eine Lade-Animation
+    return null
   }
 
   const menuItems = [
@@ -64,7 +64,7 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-white">Willkommen zurück, {user.email}!</CardTitle>
             <CardDescription className="text-gray-300">
-              Name: {user.name || 'Nicht angegeben'} | Firma: {user.company || 'Nicht angegeben'}
+              Name: {user.full_name || 'Nicht angegeben'} | Firma: {user.company_name || 'Nicht angegeben'}
             </CardDescription>
           </CardHeader>
         </Card>
