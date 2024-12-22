@@ -7,7 +7,6 @@ import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { Upload } from 'lucide-react'
 import { supabase } from "@/lib/supabaseClient"
-import type { SupabaseClient } from "@supabase/supabase-js"
 import { useAuth } from '../contexts/AuthContext'
 
 interface Call {
