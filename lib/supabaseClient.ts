@@ -1,13 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+let supabase;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
+if (typeof window !== 'undefined') {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Missing Supabase environment variables')
+  } else {
+    supabase = createClient(supabaseUrl, supabaseAnonKey)
+  }
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export { supabase }
 
 // Helper function to parse project rates
 export function parseProjectRates(project: Record<string, unknown>) {
