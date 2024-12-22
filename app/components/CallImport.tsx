@@ -109,10 +109,10 @@ const CallImport = () => {
 
       try {
         console.log('Zu importierende Anrufe:', JSON.stringify(newCalls, null, 2))
-        const supabaseClient: SupabaseClient = supabase
-        if (!supabaseClient) {
+        if (!supabase) {
           throw new Error('Supabase-Client ist nicht initialisiert');
         }
+        const supabaseClient: SupabaseClient = supabase
         const { data, error } = await supabaseClient
           .from('calls')
           .insert(newCalls)
