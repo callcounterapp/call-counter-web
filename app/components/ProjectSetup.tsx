@@ -37,9 +37,10 @@ export default function ProjectSetup({ projects }: ProjectSetupProps) {
   
   const [localProjects, setLocalProjects] = useState<Project[]>([])
 
-  useEffect(() => {
-    setLocalProjects(Array.isArray(projects) ? projects : [])
-  }, [projects])
+  // Removed useEffect:
+  // useEffect(() => {
+  //   setLocalProjects(Array.isArray(projects) ? projects : [])
+  // }, [projects])
 
   const [newProject, setNewProject] = useState({
     id: null as string | null,
@@ -67,7 +68,8 @@ export default function ProjectSetup({ projects }: ProjectSetupProps) {
 
       if (error) throw error
       
-      setLocalProjects(data || [])
+      const typedData = (data || []) as Project[];
+      setLocalProjects(typedData);
     } catch (error) {
       console.error('Error fetching projects:', error)
       alert('Fehler beim Laden der Projekte. Bitte versuchen Sie es erneut.')
@@ -96,11 +98,6 @@ export default function ProjectSetup({ projects }: ProjectSetupProps) {
   const addOrUpdateProject = async () => {
     if (!newProject.internalName.trim() || !newProject.displayName.trim()) {
       alert("Bitte geben Sie sowohl einen internen Namen als auch einen Anzeigenamen ein.");
-      return;
-    }
-
-    if (!supabase) {
-      alert("Fehler: Supabase-Client ist nicht initialisiert.");
       return;
     }
 
@@ -182,9 +179,6 @@ export default function ProjectSetup({ projects }: ProjectSetupProps) {
   const deleteProject = async (id: string) => {
     if (window.confirm('Sind Sie sicher, dass Sie dieses Projekt löschen möchten?')) {
       try {
-        if (!supabase) {
-          throw new Error('Supabase client is not initialized');
-        }
         const { error } = await supabase
           .from('projects')
           .delete()
