@@ -104,7 +104,7 @@ export default function CallStats() {
         if (callsError) throw callsError;
         console.log('Raw calls data:', callsData);
         
-        const processedCalls = (callsData as RawCall[] || []).map((call: RawCall) => ({
+        const processedCalls = ((callsData as unknown as RawCall[]) || []).map((call: RawCall) => ({
           ...call,
           Duration: parseDuration(call.formattedduration || ''),
           internal_name: call.name
