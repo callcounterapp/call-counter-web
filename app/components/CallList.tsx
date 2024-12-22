@@ -7,7 +7,7 @@ import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { PhoneIncoming, PhoneOutgoing, PhoneMissed, Search, Trash2, PhoneOff } from 'lucide-react'
-import { supabase } from "@/lib/supabaseClient"
+import { supabase } from '../../lib/supabaseClient'
 import { useToast } from "./ui/use-toast"
 import { useAuth } from '../contexts/AuthContext'
 
@@ -64,8 +64,7 @@ const CallList = () => {
 
       if (fetchError) throw fetchError
 
-      setCalls((data as RawCall[]).map((call: RawCall): Call => ({
-        ...call,
+      setCalls(((data || []) as unknown as RawCall[]).map((call): Call => ({
         id: call.id,
         type: call.type,
         name: call.name,
