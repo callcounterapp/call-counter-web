@@ -123,18 +123,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
       if (error) throw error
       if (data.user) {
-        //create profile
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert([{ id: data.user.id, name: name, company: company }])
+          .insert([{ id: data.user.id, name: name, company: company, status: 'pending', role: 'user' }])
         if (profileError) throw profileError
-        return { message: 'Registration successful' }
+        return { message: 'Registrierung erfolgreich. Bitte warten Sie auf die Freigabe durch einen Administrator.' }
       } else {
-        throw new Error('User registration failed')
+        throw new Error('Benutzerregistrierung fehlgeschlagen')
       }
     } catch (error) {
       console.error('Registration error:', error)
-      return { message: 'Registration failed' }
+      throw error
     }
   }
 
