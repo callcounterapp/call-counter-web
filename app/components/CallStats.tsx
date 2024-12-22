@@ -110,7 +110,7 @@ export default function CallStats() {
           internal_name: call.name
         }));
 
-        const processedProjects = (projectsData as RawProject[] || []).map((project: RawProject) => ({
+        const processedProjects = ((projectsData as unknown as RawProject[]) || []).map((project: RawProject) => ({
           ...project,
           custom_rates: typeof project.custom_rates === 'string' 
             ? JSON.parse(project.custom_rates) 
