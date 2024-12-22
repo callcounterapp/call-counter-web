@@ -8,6 +8,7 @@ import { Label } from "./ui/label"
 import { Upload } from 'lucide-react'
 import { supabase } from "@/lib/supabaseClient"
 import { useAuth } from '../contexts/AuthContext'
+import type { PostgrestError } from '@supabase/supabase-js'
 
 interface Call {
   id?: number
@@ -114,11 +115,12 @@ const CallImport = () => {
         }
         const { data, error } = await supabase
           .from('calls')
-          .insert(newCalls)
+          .insert(newCalls as unknown as Record<string, unknown>[])
 
         if (error) {
           console.error('Supabase Fehler:', error)
-          throw error
+          setImportStatus(`Fehler beim Importieren der Anrufe: ${(error as PostgrestError).message}`)
+          return
         }
 
         setImportStatus(`Erfolgreich ${newCallsCount} Anrufe importiert. ${skippedCallsCount} ungültige Einträge wurden übersprungen.`)
