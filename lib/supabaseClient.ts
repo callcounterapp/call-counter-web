@@ -1,14 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Nur auf der Client-Seite initialisieren
-const supabase = typeof window !== 'undefined' 
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-  : undefined
+let supabase: ReturnType<typeof createClient> | undefined
+
+if (typeof window !== 'undefined') {
+  supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
 
 export { supabase }
+
+// Helper functions bleiben unverändert
+
+
 
 // Helper function to parse project rates
 export function parseProjectRates(project: Record<string, unknown>) {
