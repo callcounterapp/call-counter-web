@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "./ui/select"
 import { Info, Edit, Trash2, Plus, BarChart } from 'lucide-react'
 import { Checkbox } from "./ui/checkbox"
-import { supabase } from "@/lib/supabaseClient"
+import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 
 interface Project {
@@ -123,7 +123,7 @@ export default function ProjectSetup({ projects = [] }: ProjectSetupProps) {
         throw new Error('Supabase client is not initialized');
       }
       let result;
-      if (editMode) {
+      if (editMode && newProject.id) {
         const { data, error } = await supabase
           .from('projects')
           .update(projectToSave)
