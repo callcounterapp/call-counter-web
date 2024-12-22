@@ -119,6 +119,9 @@ export default function ProjectSetup({ projects = [] }: ProjectSetupProps) {
     }
 
     try {
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
       let result;
       if (editMode) {
         const { data, error } = await supabase
@@ -180,6 +183,9 @@ export default function ProjectSetup({ projects = [] }: ProjectSetupProps) {
   const deleteProject = async (id: string) => {
     if (window.confirm('Sind Sie sicher, dass Sie dieses Projekt löschen möchten?')) {
       try {
+        if (!supabase) {
+          throw new Error('Supabase client is not initialized');
+        }
         const { error } = await supabase
           .from('projects')
           .delete()
