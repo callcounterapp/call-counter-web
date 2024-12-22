@@ -283,20 +283,20 @@ const CallList = () => {
                     <AlertDialogTitle>Anrufe nach Monat löschen</AlertDialogTitle>
                     <AlertDialogDescription className="text-gray-400">
                       Wählen Sie den Monat aus, für den Sie alle Anrufe löschen möchten.
-                      <Select value={selectedMonth} onValueChange={setSelectedMonth} className="mt-4">
-                        <SelectTrigger className="w-full bg-white/5 border-gray-700 text-white">
-                          <SelectValue placeholder="Monat auswählen" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-800 text-white border-gray-700">
-                          {availableMonths.map(month => (
-                            <SelectItem key={month.value} value={month.value}>
-                              {month.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
+                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                    <SelectTrigger className="w-full bg-white/5 border-gray-700 text-white mt-4">
+                      <SelectValue placeholder="Monat auswählen" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 text-white border-gray-700">
+                      {availableMonths.map(month => (
+                        <SelectItem key={month.value} value={month.value}>
+                          {month.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <AlertDialogFooter>
                     <AlertDialogCancel className="bg-gray-700 text-white hover:bg-gray-600">Abbrechen</AlertDialogCancel>
                     <AlertDialogAction 
@@ -344,8 +344,7 @@ const CallList = () => {
                     <TableHead className="text-white">Info</TableHead>
                     <TableHead className="text-white">Aktion</TableHead>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
+                </TableHeader><TableBody>
                   {filteredCalls.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8">
