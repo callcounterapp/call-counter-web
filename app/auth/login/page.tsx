@@ -21,15 +21,16 @@ export default function LoginPage() {
     e.preventDefault();
 
     try {
-      const result = await login(email, password);
+      const { user } = await login(email, password);
       
-      if (result.user) {
-        console.log('Benutzer erfolgreich angemeldet:', result.user);
+      if (user) {
+        console.log('Benutzer erfolgreich angemeldet:', user);
         router.push('/dashboard');
       } else {
         setMessage('Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.');
       }
-    } catch (_error) {
+    } catch (error) {
+      console.error('Login error:', error);
       setMessage('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
     }
   };
