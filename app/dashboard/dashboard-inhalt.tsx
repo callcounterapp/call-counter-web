@@ -33,19 +33,19 @@ export default function DashboardInhalt() {
   const [projects, setProjects] = useState<Project[]>([])
 
   const fetchProjects = useCallback(async () => {
-    if (user?.id) {
+    if (user?.id && supabase) {
       const { data, error } = await supabase
         .from('projects')
         .select('*')
         .eq('user_id', user.id)
 
-      if (error) {
-        console.error('Error fetching projects:', error)
-      } else {
-        setProjects(data as Project[] || [])
-      }
+    if (error) {
+      console.error('Error fetching projects:', error)
+    } else {
+      setProjects(data as Project[] || [])
     }
-  }, [user])
+  }
+}, [user])
 
   useEffect(() => {
     if (!user) {
