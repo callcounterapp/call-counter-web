@@ -37,6 +37,30 @@ interface Project {
   user_id: string
 }
 
+interface RawCall {
+  id: number;
+  type: string;
+  name: string;
+  number: string;
+  formattedtime: string;
+  formattedduration: string;
+  info: string;
+  user_id: string;
+}
+
+interface RawProject {
+  id: string;
+  internal_name: string;
+  display_name: string;
+  payment_model: 'perMinute' | 'perCall' | 'custom';
+  min_duration: number;
+  round_up_minutes: boolean;
+  per_minute_rate?: number;
+  per_call_rate?: number;
+  custom_rates?: string;
+  user_id: string;
+}
+
 export default function CallStats() {
   const [calls, setCalls] = useState<Call[]>([])
   const [projects, setProjects] = useState<Project[]>([])
@@ -80,13 +104,13 @@ export default function CallStats() {
         if (callsError) throw callsError;
         console.log('Raw calls data:', callsData);
         
-        const processedCalls = (callsData || []).map((call: any) => ({
+        const processedCalls = (callsData as RawCall[] || []).map((call: RawCall) => ({
           ...call,
           Duration: parseDuration(call.formattedduration || ''),
           internal_name: call.name
         }));
 
-        const processedProjects = (projectsData || []).map((project: any) => ({
+        const processedProjects = (projectsData as RawProject[] || []).map((project: RawProject) => ({
           ...project,
           custom_rates: typeof project.custom_rates === 'string' 
             ? JSON.parse(project.custom_rates) 

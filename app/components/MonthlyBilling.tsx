@@ -9,7 +9,7 @@ import { Label } from "./ui/label"
 import { FileDown, Euro, ArrowLeft } from 'lucide-react'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
-import { supabase } from "@/lib/supabaseClient"
+import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from "./ui/use-toast"
 import { useRouter } from 'next/navigation'
@@ -85,6 +85,30 @@ type ExtendedJsPDF = jsPDF & {
   };
 };
 
+interface RawCall {
+  id: number;
+  type: string;
+  name: string;
+  number: string;
+  formattedtime: string;
+  formattedduration: string;
+  info: string;
+  user_id: string;
+}
+
+interface RawProject {
+  id: string;
+  internal_name: string;
+  display_name: string;
+  payment_model: 'perMinute' | 'perCall' | 'custom';
+  min_duration: number;
+  round_up_minutes: boolean;
+  per_minute_rate?: number;
+  per_call_rate?: number;
+  custom_rates?: string;
+  user_id: string;
+}
+
 const formatMonthYear = (dateString: string) => {
   const [year, month] = dateString.split('-');
   const date = new Date(parseInt(year), parseInt(month) - 1, 1);
@@ -135,13 +159,13 @@ export default function MonthlyBilling() {
         
         if (callsError) throw callsError;
         
-        const processedCalls = (callsData || []).map(call => ({
+        const processedCalls = (callsData as RawCall[] || []).map(call => ({
           ...call,
           Duration: parseDuration(call.formattedduration),
           internal_name: call.name
         }));
 
-        const processedProjects = (projectsData || []).map(project => ({
+        const processedProjects = (projectsData as RawProject[] || []).map(project => ({
           ...project,
           custom_rates: typeof project.custom_rates === 'string' 
             ? JSON.parse(project.custom_rates) 
