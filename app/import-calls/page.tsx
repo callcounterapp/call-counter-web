@@ -38,7 +38,7 @@ export default function ImportCallsPage() {
   const [file, setFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState('')
   const [importStatus, setImportStatus] = useState<string>('')
-  const router = useRouter()
+  //const router = useRouter() //Removed this line
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
