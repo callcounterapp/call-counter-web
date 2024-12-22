@@ -1,21 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-let supabase: SupabaseClient | undefined;
-
-if (typeof window !== 'undefined') {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Missing Supabase environment variables')
-  } else {
-    supabase = createClient(supabaseUrl, supabaseAnonKey)
-  }
-}
+// Nur auf der Client-Seite initialisieren
+const supabase = typeof window !== 'undefined' 
+  ? createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  : undefined
 
 export { supabase }
-export type { SupabaseClient }
 
 // Helper function to parse project rates
 export function parseProjectRates(project: Record<string, unknown>) {
