@@ -55,11 +55,8 @@ export default function ProjectSetup({ projects }: ProjectSetupProps) {
   const [editMode, setEditMode] = useState(false)
 
   const fetchProjects = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id) return; // Früher Ausstieg, wenn kein Benutzer vorhanden ist
     try {
-      if (!supabase) {
-        throw new Error('Supabase client is not initialized');
-      }
       const { data, error } = await supabase
         .from('projects')
         .select('*')
@@ -72,11 +69,11 @@ export default function ProjectSetup({ projects }: ProjectSetupProps) {
       console.error('Error fetching projects:', error)
       alert('Fehler beim Laden der Projekte. Bitte versuchen Sie es erneut.')
     }
-  }, [user?.id])
+  }, [user?.id]) // Abhängigkeit ist nur user?.id
 
   useEffect(() => {
     fetchProjects()
-  }, [fetchProjects])
+  }, [fetchProjects]) // fetchProjects ist jetzt die einzige Abhängigkeit
 
   const resetForm = () => {
     setNewProject({
@@ -96,6 +93,11 @@ export default function ProjectSetup({ projects }: ProjectSetupProps) {
   const addOrUpdateProject = async () => {
     if (!newProject.internalName.trim() || !newProject.displayName.trim()) {
       alert("Bitte geben Sie sowohl einen internen Namen als auch einen Anzeigenamen ein.");
+      return;
+    }
+
+    if (!supabase) {
+      alert("Fehler: Supabase-Client ist nicht initialisiert.");
       return;
     }
 
