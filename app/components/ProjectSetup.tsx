@@ -50,7 +50,7 @@ export default function ProjectSetup({ projects = [] }: ProjectSetupProps) {
 
       if (error) throw error
       
-      const typedData = (data || []) as Project[];
+      const typedData = (data || []) as unknown as Project[];
       setLocalProjects(typedData);
     } catch (error) {
       console.error('Error fetching projects:', error)
