@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { Upload } from 'lucide-react'
-import { supabase, SupabaseClient } from "@/lib/supabaseClient"
+import { supabase } from "@/lib/supabaseClient"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { useAuth } from '../contexts/AuthContext'
 
 interface Call {
@@ -112,8 +113,7 @@ const CallImport = () => {
         if (!supabase) {
           throw new Error('Supabase-Client ist nicht initialisiert');
         }
-        const supabaseClient: SupabaseClient = supabase
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
           .from('calls')
           .insert(newCalls)
 
