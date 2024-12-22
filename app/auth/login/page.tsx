@@ -29,7 +29,8 @@ export default function LoginPage() {
       } else {
         setMessage('Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.');
       }
-    } catch (_error) {
+    } catch (error) {
+      console.error('Login error:', error);
       setMessage('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
     }
   };
