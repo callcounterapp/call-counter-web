@@ -15,7 +15,7 @@ import Link from 'next/link'
 import { LogOut, PhoneIncoming, List, FolderOpen, BarChart2, Users, ArrowRight } from 'lucide-react'
 
 export default function DashboardPage() {
-  const { user, logout, refreshSession } = useAuth()
+  const { user, logout } = useAuth()
   const router = useRouter()
   const [isAdmin, setIsAdmin] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -25,9 +25,6 @@ export default function DashboardPage() {
     const checkSession = async () => {
       try {
         setIsLoading(true)
-        if (refreshSession) {
-          await refreshSession()
-        }
         if (!user) {
           console.log('No valid session found, redirecting to login')
           router.push('/auth/login')
@@ -54,7 +51,7 @@ export default function DashboardPage() {
       clearInterval(intervalId)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [user, router, refreshSession])
+  }, [user, router])
 
   const handleLogout = async () => {
     if (isLoggingOut) return
