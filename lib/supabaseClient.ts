@@ -1,20 +1,13 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 
-let supabase: SupabaseClient | undefined
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-if (typeof window !== 'undefined') {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Missing Supabase environment variables')
-    throw new Error('Missing Supabase environment variables')
-  }
-
-  supabase = createClient(supabaseUrl, supabaseAnonKey)
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables')
 }
 
-export { supabase as supabase }
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Helper function to parse project rates
 export function parseProjectRates(project: Record<string, unknown>) {
@@ -84,6 +77,11 @@ export function parseCallDuration(call: Record<string, unknown>) {
 
 // Function to check if the current user is an admin
 export async function isAdmin() {
+  if (!supabase) {
+    console.error('Supabase client is not initialized');
+    return false;
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return false
   
