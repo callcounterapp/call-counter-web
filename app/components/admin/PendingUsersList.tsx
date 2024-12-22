@@ -1,32 +1,21 @@
-'use client'
-
-import React, { useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import { useAuth } from '../../contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
-import { Button } from "../ui/button"
-import { CheckCircle, XCircle } from 'lucide-react'
+import { useCallback, useState } from 'react';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 interface User {
   id: string;
-  email: string;
-  created_at: string;
-  full_name?: string;
-  status: string;
-  role: string;
+  // ... other user properties
 }
 
-interface PendingUsersListProps {
-  pendingUsers?: User[];
-  approveUser?: (userId: string) => Promise<void>;
+interface Profile {
+  id: string;
+  status: 'pending' | 'active' | 'rejected';
+  // ... other profile properties
 }
 
-const PendingUsersList: React.FC<PendingUsersListProps> = () => {
-  const [pendingUsers, setPendingUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+const usePendingUsers = (supabase: SupabaseClient | null, user: User | null) => {
+  const [pendingUsers, setPendingUsers] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
 
   const loadUsers = useCallback(async () => {
     if (!user?.id) {
@@ -39,6 +28,9 @@ const PendingUsersList: React.FC<PendingUsersListProps> = () => {
     try {
       setLoading(true);
       console.log('Fetching pending users...');
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -58,14 +50,13 @@ const PendingUsersList: React.FC<PendingUsersListProps> = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
-
-  useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
+  }, [user, supabase]);
 
   const handleApprove = async (userId: string) => {
     try {
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
       const { error } = await supabase
         .from('profiles')
         .update({ status: 'active' })
@@ -82,6 +73,9 @@ const PendingUsersList: React.FC<PendingUsersListProps> = () => {
 
   const handleReject = async (userId: string) => {
     try {
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
       const { error } = await supabase
         .from('profiles')
         .update({ status: 'rejected' })
@@ -96,59 +90,8 @@ const PendingUsersList: React.FC<PendingUsersListProps> = () => {
     }
   };
 
-  if (!user || user.role !== 'admin') {
-    return <div>Sie haben keine Berechtigung, diese Seite zu sehen.</div>;
-  }
-
-  if (loading) return <div>Laden...</div>;
-  if (error) return <div>Fehler: {error}</div>;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Ausstehende Benutzer</CardTitle>
-        <CardDescription>Genehmigen oder ablehnen Sie ausstehende Benutzerregistrierungen</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {pendingUsers.length === 0 ? (
-          <p>Keine ausstehenden Benutzer vorhanden.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>E-Mail</TableHead>
-                <TableHead>Rolle</TableHead>
-                <TableHead>Registriert am</TableHead>
-                <TableHead>Aktionen</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pendingUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.full_name || 'N/A'}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.role}</TableCell>
-                  <TableCell>{new Date(user.created_at).toLocaleString()}</TableCell>
-                  <TableCell>
-                    <div className="space-x-2">
-                      <Button onClick={() => handleApprove(user.id)}>
-                        <CheckCircle className="h-4 w-4 mr-2" /> Genehmigen
-                      </Button>
-                      <Button variant="destructive" onClick={() => handleReject(user.id)}>
-                        <XCircle className="h-4 w-4 mr-2" /> Ablehnen
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
-  );
+  return { pendingUsers, loading, error, loadUsers, handleApprove, handleReject };
 };
 
-export default PendingUsersList;
+export default usePendingUsers;
 
