@@ -25,35 +25,17 @@ interface Project {
 }
 
 interface ProjectSetupProps {
-  projects: Project[];
+  projects?: Project[];
 }
 
 interface InfoTextProps {
   children: React.ReactNode;
 }
 
-export default function ProjectSetup({ projects }: ProjectSetupProps) {
+export default function ProjectSetup({ projects = [] }: ProjectSetupProps) {
   const { user } = useAuth()
   
   const [localProjects, setLocalProjects] = useState<Project[]>([])
-
-  // Removed useEffect:
-  // useEffect(() => {
-  //   setLocalProjects(Array.isArray(projects) ? projects : [])
-  // }, [projects])
-
-  const [newProject, setNewProject] = useState({
-    id: null as string | null,
-    internalName: '',
-    displayName: '',
-    paymentModel: 'custom' as 'custom' | 'perMinute' | 'perCall',
-    customRates: [{ minDuration: '', maxDuration: '', rate: '' }],
-    minDuration: '',
-    perMinuteRate: '',
-    perCallRate: '',
-    roundUpMinutes: true,
-  })
-  const [editMode, setEditMode] = useState(false)
 
   const fetchProjects = useCallback(async () => {
     if (!user?.id) return;
@@ -80,6 +62,12 @@ export default function ProjectSetup({ projects }: ProjectSetupProps) {
     fetchProjects()
   }, [fetchProjects])
 
+  useEffect(() => {
+    if (projects.length > 0) {
+      setLocalProjects(projects);
+    }
+  }, [projects]);
+
   const resetForm = () => {
     setNewProject({
       id: null,
@@ -94,6 +82,19 @@ export default function ProjectSetup({ projects }: ProjectSetupProps) {
     })
     setEditMode(false)
   }
+
+  const [newProject, setNewProject] = useState({
+    id: null as string | null,
+    internalName: '',
+    displayName: '',
+    paymentModel: 'custom' as 'custom' | 'perMinute' | 'perCall',
+    customRates: [{ minDuration: '', maxDuration: '', rate: '' }],
+    minDuration: '',
+    perMinuteRate: '',
+    perCallRate: '',
+    roundUpMinutes: true,
+  })
+  const [editMode, setEditMode] = useState(false)
 
   const addOrUpdateProject = async () => {
     if (!newProject.internalName.trim() || !newProject.displayName.trim()) {
