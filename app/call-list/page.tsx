@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -48,18 +48,7 @@ const CallList = () => {
   const { toast } = useToast()
   const { user } = useAuth()
 
-  useEffect(() => {
-    fetchCalls()
-  }, [user])
-
-  useEffect(() => {
-    if (calls.length > 0) {
-      const months = getMonthsWithCalls(calls)
-      setAvailableMonths(months)
-    }
-  }, [calls])
-
-  const fetchCalls = async () => {
+  const fetchCalls = useCallback(async () => {
     try {
       if (!user) {
         setCalls([])
@@ -81,7 +70,18 @@ const CallList = () => {
         variant: "destructive",
       })
     }
-  }
+  }, [user, toast])
+
+  useEffect(() => {
+    fetchCalls()
+  }, [fetchCalls])
+
+  useEffect(() => {
+    if (calls.length > 0) {
+      const months = getMonthsWithCalls(calls)
+      setAvailableMonths(months)
+    }
+  }, [calls])
 
   const deleteCall = async (id: number) => {
     try {
@@ -344,7 +344,8 @@ const CallList = () => {
                     <TableHead className="text-white">Info</TableHead>
                     <TableHead className="text-white">Aktion</TableHead>
                   </TableRow>
-                </TableHeader><TableBody>
+                </TableHeader>
+                <TableBody>
                   {filteredCalls.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8">

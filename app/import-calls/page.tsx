@@ -84,7 +84,7 @@ export default function ImportCallsPage() {
       const lines = content.split('\n')
       const calls: Call[] = []
       let newCallsCount = 0
-      let skippedCallsCount = 0
+      // let skippedCallsCount = 0
 
       lines.slice(1).filter(line => line.trim()).forEach((line) => {
         const [type, name, number, timeStr, durationStr, info] = line.split(',').map(item => item?.trim() ?? '')
@@ -102,7 +102,7 @@ export default function ImportCallsPage() {
         if (validateCall(call)) {
           calls.push(call as Call)
         } else {
-          skippedCallsCount++
+          // skippedCallsCount++
         }
       })
 

@@ -15,7 +15,7 @@ const supabase = createClient(
 )
 
 export default function AdminUsersPage() {
-  const { user } = useAuth()
+  const { } = useAuth()
   const router = useRouter()
   const [isAuthorized, setIsAuthorized] = useState(false)
   const [isLoading, setIsLoading] = useState(true)

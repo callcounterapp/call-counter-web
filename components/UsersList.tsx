@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -28,11 +28,7 @@ export default function UsersList({ isLoading }: { isLoading: boolean }) {
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
 
-  useEffect(() => {
-    loadUsers()
-  }, [])
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       // Lade alle Benutzerprofile
       const { data: profiles, error: profilesError } = await supabase
@@ -68,7 +64,11 @@ export default function UsersList({ isLoading }: { isLoading: boolean }) {
         variant: "destructive",
       })
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    loadUsers()
+  }, [loadUsers])
 
   const handleStatusChange = async (userId: string, currentStatus: string) => {
     const newStatus = currentStatus === 'active' ? 'pending' : 'active'
@@ -159,7 +159,7 @@ export default function UsersList({ isLoading }: { isLoading: boolean }) {
   return (
     <div className="space-y-6">
       {users.length === 0 ? (
-        <p className="text-center py-4 text-gray-400"></p>
+        <p className="text-center py-4 text-gray-400">Keine Benutzer gefunden</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {users.map((user) => (
