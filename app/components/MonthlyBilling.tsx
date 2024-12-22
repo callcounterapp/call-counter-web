@@ -9,7 +9,7 @@ import { Label } from "./ui/label"
 import { FileDown, Euro, ArrowLeft } from 'lucide-react'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
-import { supabase } from '../../lib/supabaseClient'
+import { supabase } from "@/lib/supabaseClient"
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from "./ui/use-toast"
 import { useRouter } from 'next/navigation'

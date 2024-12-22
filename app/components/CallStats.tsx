@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "./ui/select"
 import { Progress } from "./ui/progress"
 import { Euro, Clock, PhoneCall, PieChart, BarChart } from 'lucide-react'
-import { supabase } from '../../lib/supabaseClient'
+import { supabase } from "@/lib/supabaseClient"
 import { useToast } from "./ui/use-toast"
 import { useAuth } from '../contexts/AuthContext'
 
