@@ -113,9 +113,13 @@ export default function MonthlyBilling() {
   useEffect(() => {
     const fetchData = async () => {
       if (!user?.id) return;
-      
+    
       try {
         setLoading(true);
+        
+        if (!supabase) {
+          throw new Error('Supabase client is not initialized');
+        }
         
         const { data: projectsData, error: projectsError } = await supabase
           .from('projects')
