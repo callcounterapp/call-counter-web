@@ -53,7 +53,7 @@ const CallList = () => {
 
       if (fetchError) throw fetchError
 
-      setCalls(data || [])
+      setCalls(data as Call[] || [])
     } catch (err) {
       console.error('Fehler in fetchCalls:', err)
       const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler beim Laden der Anrufe'
