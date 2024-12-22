@@ -159,13 +159,13 @@ export default function MonthlyBilling() {
         
         if (callsError) throw callsError;
         
-        const processedCalls = (callsData as RawCall[] || []).map(call => ({
+        const processedCalls = ((callsData as unknown as RawCall[]) || []).map(call => ({
           ...call,
           Duration: parseDuration(call.formattedduration),
           internal_name: call.name
         }));
 
-        const processedProjects = (projectsData as RawProject[] || []).map(project => ({
+        const processedProjects = ((projectsData as unknown as RawProject[]) || []).map(project => ({
           ...project,
           custom_rates: typeof project.custom_rates === 'string' 
             ? JSON.parse(project.custom_rates) 
