@@ -25,7 +25,7 @@ export default function DashboardContent() {
 
   useEffect(() => {
     const fetchProjects = async () => {
-      if (user?.id) {
+      if (user?.id && supabase) {
         const { data, error } = await supabase
           .from('projects')
           .select('*')
