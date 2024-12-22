@@ -39,6 +39,13 @@ interface Call {
   created_at: string
 }
 
+interface ToastProps {
+  id: string;
+  title: string;
+  description: string;
+  variant?: 'default' | 'destructive';
+}
+
 const CallList = () => {
   const [calls, setCalls] = useState<Call[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -65,10 +72,11 @@ const CallList = () => {
     } catch (error) {
       console.error('Error fetching calls:', error)
       toast({
+        id: "fetch-error",
         title: "Fehler",
         description: "Anrufe konnten nicht geladen werden.",
         variant: "destructive",
-      })
+      } as ToastProps)
     }
   }, [user, toast])
 
@@ -94,16 +102,18 @@ const CallList = () => {
       
       setCalls(calls.filter(call => call.id !== id))
       toast({
+        id: "delete-success",
         title: "Erfolg",
         description: "Anruf wurde erfolgreich gelöscht.",
-      })
+      } as ToastProps)
     } catch (error) {
       console.error('Error deleting call:', error)
       toast({
+        id: "delete-error",
         title: "Fehler",
         description: "Anruf konnte nicht gelöscht werden.",
         variant: "destructive",
-      })
+      } as ToastProps)
     }
   }
 
@@ -119,16 +129,18 @@ const CallList = () => {
       setCalls([])
       setAvailableMonths([])
       toast({
+        id: "delete-all-success",
         title: "Erfolg",
         description: "Alle Anrufe wurden erfolgreich gelöscht.",
-      })
+      } as ToastProps)
     } catch (error) {
       console.error('Error deleting all calls:', error)
       toast({
+        id: "delete-all-error",
         title: "Fehler",
         description: "Anrufe konnten nicht gelöscht werden.",
         variant: "destructive",
-      })
+      } as ToastProps)
     }
   }
 
@@ -145,9 +157,10 @@ const CallList = () => {
 
       if (callsToDelete.length === 0) {
         toast({
+          id: "no-calls-found",
           title: "Information",
           description: `Keine Anrufe für ${new Date(monthStart).toLocaleString('de-DE', { month: 'long', year: 'numeric' })} gefunden.`,
-        })
+        } as ToastProps)
         return
       }
 
@@ -160,16 +173,18 @@ const CallList = () => {
 
       await fetchCalls()
       toast({
+        id: "delete-by-month-success",
         title: "Erfolg",
         description: `${callsToDelete.length} Anrufe für ${new Date(monthStart).toLocaleString('de-DE', { month: 'long', year: 'numeric' })} wurden gelöscht.`,
-      })
+      } as ToastProps)
     } catch (error) {
       console.error('Error deleting calls by month:', error)
       toast({
+        id: "delete-by-month-error",
         title: "Fehler",
         description: "Anrufe konnten nicht gelöscht werden.",
         variant: "destructive",
-      })
+      } as ToastProps)
     }
   }
 

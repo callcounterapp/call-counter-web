@@ -15,19 +15,18 @@ type ToasterToast = ToastProps & {
   action?: ToastActionElement
 }
 
-type ActionType = "ADD_TOAST" | "UPDATE_TOAST" | "DISMISS_TOAST" | "REMOVE_TOAST"
 
 type Action =
   | {
-      type: ActionType
+      type: "ADD_TOAST"
       toast: ToasterToast
     }
   | {
-      type: ActionType
+      type: "UPDATE_TOAST"
       toast: Partial<ToasterToast>
     }
   | {
-      type: ActionType
+      type: "DISMISS_TOAST" | "REMOVE_TOAST"
       toastId?: ToasterToast["id"]
     }
 

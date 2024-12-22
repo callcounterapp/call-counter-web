@@ -59,6 +59,7 @@ export default function UsersList({ isLoading }: { isLoading: boolean }) {
       console.error('Fehler beim Laden der Benutzer:', error)
       setError('Fehler beim Laden der Benutzer. Bitte versuchen Sie es später erneut.')
       toast({
+        id: "load-users-error",
         title: "Fehler",
         description: "Benutzer konnten nicht geladen werden.",
         variant: "destructive",
@@ -89,6 +90,7 @@ export default function UsersList({ isLoading }: { isLoading: boolean }) {
       if (data && data.length > 0) {
         await loadUsers()
         toast({
+          id: "status-change-success",
           title: "Erfolg",
           description: `Benutzerstatus erfolgreich auf ${newStatus} geändert`,
         })
@@ -98,6 +100,7 @@ export default function UsersList({ isLoading }: { isLoading: boolean }) {
     } catch (error) {
       console.error('Status change error:', error)
       toast({
+        id: "status-change-error",
         title: "Fehler",
         description: "Statusänderung fehlgeschlagen. Bitte versuchen Sie es später erneut.",
         variant: "destructive",
@@ -123,6 +126,7 @@ export default function UsersList({ isLoading }: { isLoading: boolean }) {
       if (data && data.length > 0) {
         await loadUsers()
         toast({
+          id: "role-change-success",
           title: "Erfolg",
           description: `Benutzerrolle erfolgreich auf ${newRole} geändert`,
         })
@@ -132,6 +136,7 @@ export default function UsersList({ isLoading }: { isLoading: boolean }) {
     } catch (error) {
       console.error('Role change error:', error)
       toast({
+        id: "role-change-error",
         title: "Fehler",
         description: "Rollenänderung fehlgeschlagen. Bitte versuchen Sie es später erneut.",
         variant: "destructive",
