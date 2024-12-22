@@ -55,8 +55,11 @@ export default function ProjectSetup({ projects }: ProjectSetupProps) {
   const [editMode, setEditMode] = useState(false)
 
   const fetchProjects = useCallback(async () => {
-    if (!user?.id) return; // Früher Ausstieg, wenn kein Benutzer vorhanden ist
+    if (!user?.id) return;
     try {
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
       const { data, error } = await supabase
         .from('projects')
         .select('*')
@@ -69,11 +72,11 @@ export default function ProjectSetup({ projects }: ProjectSetupProps) {
       console.error('Error fetching projects:', error)
       alert('Fehler beim Laden der Projekte. Bitte versuchen Sie es erneut.')
     }
-  }, [user?.id]) // Abhängigkeit ist nur user?.id
+  }, [user?.id])
 
   useEffect(() => {
     fetchProjects()
-  }, [fetchProjects]) // fetchProjects ist jetzt die einzige Abhängigkeit
+  }, [fetchProjects])
 
   const resetForm = () => {
     setNewProject({
