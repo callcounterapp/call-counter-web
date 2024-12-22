@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { Upload } from 'lucide-react'
-import { supabase } from "@/lib/supabaseClient"
+import { supabase, SupabaseClient } from "@/lib/supabaseClient"
 import { useAuth } from '../contexts/AuthContext'
 
 interface Call {
@@ -109,10 +109,11 @@ const CallImport = () => {
 
       try {
         console.log('Zu importierende Anrufe:', JSON.stringify(newCalls, null, 2))
-        if (!supabase) {
+        const supabaseClient: SupabaseClient = supabase
+        if (!supabaseClient) {
           throw new Error('Supabase-Client ist nicht initialisiert');
         }
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from('calls')
           .insert(newCalls)
 
