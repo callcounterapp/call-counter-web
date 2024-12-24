@@ -9,14 +9,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { createClient } from '@supabase/supabase-js'
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from '@/contexts/AuthContext'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import type { Database } from '../../types/supabase'
 
 interface Project {
   id: string
@@ -35,33 +31,75 @@ export default function ManageProjects() {
   const [projects, setProjects] = useState<Project[]>([])
   const { user } = useAuth()
   const { toast } = useToast()
+  const supabase = createClientComponentClient<Database>()
 
   const fetchProjects = useCallback(async () => {
     try {
-      if (!user) return
+      if (!user) {
+        console.error('User is not authenticated')
+        toast({
+          id: 'fetch-projects-error',
+          title: "Fehler",
+          description: "Sie müssen angemeldet sein, um Projekte zu verwalten.",
+          variant: "destructive",
+        })
+        return
+      }
 
       const { data, error } = await supabase
         .from('projects')
         .select('*')
         .eq('user_id', user.id)
-    
+  
       if (error) throw error
-      
-      setProjects(data || [])
+    
+      if (data && data.length > 0) {
+        setProjects(data)
+      } else {
+        // Wenn keine Projekte gefunden wurden, laden wir die vordefinierten Projekte
+        const predefinedProjects: Project[] = [
+          {
+            id: '442cfe7c-31f1-4af2-9ce0-5be5dec9d996',
+            internal_name: 'Witt',
+            display_name: 'Witt',
+            payment_model: 'perCall',
+            custom_rates: [{"rate":0,"maxDuration":0,"minDuration":0}],
+            min_duration: 20,
+            per_minute_rate: 0,
+            per_call_rate: -37,
+            round_up_minutes: false,
+            user_id: '64bfd0ed-6a3d-422e-a6ef-5c9acb374218'
+          },
+          {
+            id: '7c787497-3e08-427b-878d-4fdbb767129a',
+            internal_name: 'Vgn',
+            display_name: 'VGN',
+            payment_model: 'perCall',
+            custom_rates: [{"rate":0,"maxDuration":0,"minDuration":0}],
+            min_duration: 20,
+            per_minute_rate: 0,
+            per_call_rate: 70,
+            round_up_minutes: true,
+            user_id: '64bfd0ed-6a3d-422e-a6ef-5c9acb374218'
+          },
+          // Fügen Sie hier die anderen Projekte aus Ihrem SQL-Insert hinzu
+        ]
+        setProjects(predefinedProjects)
+      }
     } catch (error) {
       console.error('Error fetching projects:', error)
       toast({
-        id: "fetch-error",
+        id: 'fetch-projects-error',
         title: "Error",
         description: "Fehler beim Laden der Projekte. Bitte versuchen Sie es erneut.",
         variant: "destructive",
       })
     }
-  }, [user, toast])
+  }, [user, toast, supabase])
 
   useEffect(() => {
     fetchProjects()
-  }, [user, fetchProjects])
+  }, [fetchProjects])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
@@ -94,6 +132,7 @@ export default function ManageProjects() {
 function ProjectSetup({ projects, setProjects }: { projects: Project[], setProjects: React.Dispatch<React.SetStateAction<Project[]>> }) {
   const { user } = useAuth()
   const { toast } = useToast()
+  const supabase = createClientComponentClient<Database>()
   const [newProject, setNewProject] = useState<Project>({
     id: '',
     internal_name: '',
@@ -125,9 +164,19 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
   }
 
   const addOrUpdateProject = async () => {
+    if (!user) {
+      toast({
+        id: 'project-auth-error',
+        title: "Fehler",
+        description: "Sie müssen angemeldet sein, um ein Projekt zu erstellen oder zu bearbeiten.",
+        variant: "destructive",
+      })
+      return
+    }
+
     if (!newProject.internal_name.trim() || !newProject.display_name.trim()) {
       toast({
-        id: "validation-error",
+        id: 'project-input-error',
         title: "Fehler",
         description: "Bitte geben Sie sowohl einen internen Namen als auch einen Anzeigenamen ein.",
         variant: "destructive",
@@ -144,7 +193,7 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
       })),
       per_minute_rate: Math.round(newProject.per_minute_rate * 100),
       per_call_rate: Math.round(newProject.per_call_rate * 100),
-      user_id: user?.id
+      user_id: user.id
     }
 
     try {
@@ -154,24 +203,21 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
           .from('projects')
           .update(projectToSave)
           .eq('id', newProject.id)
-          .eq('user_id', user?.id)
+          .eq('user_id', user.id)
           .select()
       
-        if (error) {
-          console.error('Supabase update error:', error)
-          throw new Error(`Fehler beim Aktualisieren des Projekts: ${error.message}`)
-        }
+        if (error) throw error
         result = data?.[0]
       } else {
+        const projectWithoutId = Object.fromEntries(
+          Object.entries(projectToSave).filter(([key]) => key !== 'id')
+        )
         const { data, error } = await supabase
           .from('projects')
-          .insert([projectToSave])
+          .insert([projectWithoutId])
           .select()
       
-        if (error) {
-          console.error('Supabase insert error:', error)
-          throw new Error(`Fehler beim Erstellen des Projekts: ${error.message}`)
-        }
+        if (error) throw error
         result = data?.[0]
       }
 
@@ -184,7 +230,7 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
         })
         resetForm()
         toast({
-          id: "project-success",
+          id: 'project-success',
           title: "Erfolg",
           description: editMode ? 'Projekt erfolgreich aktualisiert.' : 'Projekt erfolgreich erstellt.',
         })
@@ -200,7 +246,7 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
         errorMessage = JSON.stringify(error)
       }
       toast({
-        id: "project-error",
+        id: 'project-save-error',
         title: "Fehler",
         description: `Fehler beim ${editMode ? 'Aktualisieren' : 'Erstellen'} des Projekts: ${errorMessage}`,
         variant: "destructive",
@@ -223,26 +269,36 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
   }
 
   const deleteProject = async (id: string) => {
+    if (!user) {
+      toast({
+        id: 'delete-project-auth-error',
+        title: "Fehler",
+        description: "Sie müssen angemeldet sein, um ein Projekt zu löschen.",
+        variant: "destructive",
+      })
+      return
+    }
+
     if (window.confirm('Sind Sie sicher, dass Sie dieses Projekt löschen möchten?')) {
       try {
         const { error } = await supabase
           .from('projects')
           .delete()
           .eq('id', id)
-          .eq('user_id', user?.id)
+          .eq('user_id', user.id)
         
         if (error) throw error
         
         setProjects(projects.filter(project => project.id !== id))
         toast({
-          id: "delete-success",
+          id: 'delete-project-success',
           title: "Erfolg",
           description: "Projekt erfolgreich gelöscht.",
         })
       } catch (error) {
         console.error('Error deleting project:', error)
         toast({
-          id: "delete-error",
+          id: 'delete-project-error',
           title: "Fehler",
           description: "Fehler beim Löschen des Projekts. Bitte versuchen Sie es erneut.",
           variant: "destructive",
@@ -267,6 +323,12 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
   const removeCustomRate = (index: number) => {
     const updatedRates = newProject.custom_rates.filter((_, i) => i !== index)
     setNewProject({ ...newProject, custom_rates: updatedRates })
+  }
+
+  const formatCurrency = (amount: number): string => {
+    const euros = Math.floor(amount / 100);
+    const cents = amount % 100;
+    return `${euros},${cents.toString().padStart(2, '0')} €`;
   }
 
   return (
@@ -544,11 +606,5 @@ function InfoText({ children }: { children: React.ReactNode }) {
       <p className="flex-1">{children}</p>
     </div>
   )
-}
-
-function formatCurrency(amount: number): string {
-  const euros = Math.floor(amount / 100);
-  const cents = amount % 100;
-  return `${euros},${cents.toString().padStart(2, '0')} €`;
 }
 

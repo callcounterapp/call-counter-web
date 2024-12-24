@@ -127,11 +127,11 @@ export default function MonthlyStats() {
       return undefined;
     }
     
-    const callNameParts = call.name.toLowerCase().split(' ');
+    const callName = call.name.toLowerCase();
     
     const project = projects.find(project => {
       const projectName = project.internal_name.toLowerCase();
-      return callNameParts[0] === projectName;
+      return callName.includes(projectName);
     });
     
     console.log(`Looking for project with name ${call.name}:`, project);
@@ -253,7 +253,7 @@ export default function MonthlyStats() {
         acc[category] = (acc[category] || 0) + 1
         return acc
       }, {} as Record<string, number>),
-      earningsDistribution: [] // Add this line
+      earningsDistribution: []
     }
 
     const allStats = [...projectStats, unassignedStats];
