@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from '@/contexts/AuthContext'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import type { Database } from '../../types/supabase'
@@ -30,19 +29,12 @@ interface Project {
 export default function ManageProjects() {
   const [projects, setProjects] = useState<Project[]>([])
   const { user } = useAuth()
-  const { toast } = useToast()
   const supabase = createClientComponentClient<Database>()
 
   const fetchProjects = useCallback(async () => {
     try {
       if (!user) {
-        console.error('User is not authenticated')
-        toast({
-          id: 'fetch-projects-error',
-          title: "Fehler",
-          description: "Sie müssen angemeldet sein, um Projekte zu verwalten.",
-          variant: "destructive",
-        })
+        console.error('Benutzer ist nicht authentifiziert')
         return
       }
 
@@ -87,15 +79,9 @@ export default function ManageProjects() {
         setProjects(predefinedProjects)
       }
     } catch (error) {
-      console.error('Error fetching projects:', error)
-      toast({
-        id: 'fetch-projects-error',
-        title: "Error",
-        description: "Fehler beim Laden der Projekte. Bitte versuchen Sie es erneut.",
-        variant: "destructive",
-      })
+      console.error('Fehler beim Laden der Projekte:', error)
     }
-  }, [user, toast, supabase])
+  }, [user, supabase])
 
   useEffect(() => {
     fetchProjects()
@@ -131,7 +117,6 @@ export default function ManageProjects() {
 
 function ProjectSetup({ projects, setProjects }: { projects: Project[], setProjects: React.Dispatch<React.SetStateAction<Project[]>> }) {
   const { user } = useAuth()
-  const { toast } = useToast()
   const supabase = createClientComponentClient<Database>()
   const [newProject, setNewProject] = useState<Project>({
     id: '',
@@ -165,22 +150,12 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
 
   const addOrUpdateProject = async () => {
     if (!user) {
-      toast({
-        id: 'project-auth-error',
-        title: "Fehler",
-        description: "Sie müssen angemeldet sein, um ein Projekt zu erstellen oder zu bearbeiten.",
-        variant: "destructive",
-      })
+      console.error('Benutzer ist nicht authentifiziert')
       return
     }
 
     if (!newProject.internal_name.trim() || !newProject.display_name.trim()) {
-      toast({
-        id: 'project-input-error',
-        title: "Fehler",
-        description: "Bitte geben Sie sowohl einen internen Namen als auch einen Anzeigenamen ein.",
-        variant: "destructive",
-      })
+      console.error('Bitte geben Sie sowohl einen internen Namen als auch einen Anzeigenamen ein.')
       return
     }
 
@@ -229,28 +204,12 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
           return updatedProjects
         })
         resetForm()
-        toast({
-          id: 'project-success',
-          title: "Erfolg",
-          description: editMode ? 'Projekt erfolgreich aktualisiert.' : 'Projekt erfolgreich erstellt.',
-        })
+        console.log(editMode ? 'Projekt erfolgreich aktualisiert.' : 'Projekt erfolgreich erstellt.')
       } else {
         throw new Error('Keine Daten von der Datenbank zurückgegeben.')
       }
     } catch (error) {
-      console.error('Error saving project:', error)
-      let errorMessage = 'Unbekannter Fehler beim Speichern des Projekts.'
-      if (error instanceof Error) {
-        errorMessage = error.message
-      } else if (typeof error === 'object' && error !== null) {
-        errorMessage = JSON.stringify(error)
-      }
-      toast({
-        id: 'project-save-error',
-        title: "Fehler",
-        description: `Fehler beim ${editMode ? 'Aktualisieren' : 'Erstellen'} des Projekts: ${errorMessage}`,
-        variant: "destructive",
-      })
+      console.error('Fehler beim Speichern des Projekts:', error)
     }
   }
 
@@ -270,12 +229,7 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
 
   const deleteProject = async (id: string) => {
     if (!user) {
-      toast({
-        id: 'delete-project-auth-error',
-        title: "Fehler",
-        description: "Sie müssen angemeldet sein, um ein Projekt zu löschen.",
-        variant: "destructive",
-      })
+      console.error('Benutzer ist nicht authentifiziert')
       return
     }
 
@@ -290,19 +244,9 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
         if (error) throw error
         
         setProjects(projects.filter(project => project.id !== id))
-        toast({
-          id: 'delete-project-success',
-          title: "Erfolg",
-          description: "Projekt erfolgreich gelöscht.",
-        })
+        console.log('Projekt erfolgreich gelöscht.')
       } catch (error) {
-        console.error('Error deleting project:', error)
-        toast({
-          id: 'delete-project-error',
-          title: "Fehler",
-          description: "Fehler beim Löschen des Projekts. Bitte versuchen Sie es erneut.",
-          variant: "destructive",
-        })
+        console.error('Fehler beim Löschen des Projekts:', error)
       }
     }
   }
