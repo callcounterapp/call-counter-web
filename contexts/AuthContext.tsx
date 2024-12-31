@@ -37,14 +37,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .from('profiles')
       .select('role, full_name, company_name, status')
       .eq('id', userId)
-      .single()
 
     if (error) {
-      console.error('Error fetching user profile:', error)
+      console.error('Error fetching user profile:', error.message)
       return null
     }
 
-    return data
+    if (data && data.length > 0) {
+      return data[0]
+    } else {
+      console.warn('No user profile found for ID:', userId)
+      return null
+    }
   }, [])
 
   const refreshSession = useCallback(async () => {
@@ -53,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!session) {
         setUser(null)
         setSession(null)
-        return;
+        return
       }
 
       const profile = await fetchUserProfile(session.user.id)
@@ -116,6 +120,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const profile = await fetchUserProfile(data.user.id)
+      if (profile && profile.status === 'pending') {
+        return { user: null, error: 'Ihr Konto wurde noch nicht freigeschaltet. Bitte warten Sie auf die Bestätigung durch einen Administrator.' }
+      }
       const extendedUser = { ...data.user, ...profile }
       setUser(extendedUser)
       setSession(data.session)
@@ -153,7 +160,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (data.user) {
         const { error: profileError } = await supabase.from('profiles').insert([
-          { id: data.user.id, full_name: name, company_name: company, status: 'pending', role: 'user' },
+          { 
+            id: data.user.id, 
+            email: email,  
+            full_name: name, 
+            company_name: company, 
+            status: 'pending', 
+            role: 'user' 
+          },
         ])
         if (profileError) throw profileError
 

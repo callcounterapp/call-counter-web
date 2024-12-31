@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { Progress } from "@/components/ui/progress"
 import { Euro, Clock, PhoneCall, PieChart } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabaseClient'
@@ -292,12 +291,22 @@ export default function MonthlyStats() {
     }
   }, [calls, user, getProjectForCall])
 
-  const totalStats = useMemo(() => ({
-    totalCalls: calls.filter(call => call.user_id === user?.id).length,
-    billableCalls: projectStats.reduce((sum, stat) => sum + stat.billableCalls, 0),
-    totalEarnings: projectStats.reduce((sum, stat) => sum + stat.totalEarnings, 0),
-    totalDuration: calls.filter(call => call.user_id === user?.id).reduce((sum, call) => sum + (call.Duration || 0), 0),
-  }), [calls, projectStats, user])
+  const totalStats = useMemo(() => {
+    let filteredCalls = calls.filter(call => call.user_id === user?.id);
+    if (selectedMonth && selectedMonth !== 'all') {
+      filteredCalls = filteredCalls.filter(call => {
+        const callDate = parse(call.formattedtime.split(',')[0], 'dd.MM.yyyy', new Date());
+        return format(callDate, 'yyyy-MM') === selectedMonth;
+      });
+    }
+    const stats = calculateStats(filteredCalls);
+    return {
+      totalCalls: filteredCalls.length,
+      billableCalls: stats.reduce((sum, stat) => sum + stat.billableCalls, 0),
+      totalEarnings: stats.reduce((sum, stat) => sum + stat.totalEarnings, 0),
+      totalDuration: filteredCalls.reduce((sum, call) => sum + (call.Duration || 0), 0),
+    };
+  }, [calls, user, selectedMonth, calculateStats]);
 
   const activeStats = useMemo(() => {
     const projectsWithCalls = projectStats
@@ -334,15 +343,15 @@ export default function MonthlyStats() {
   if (error) {
     console.error('Fehler:', error);
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center">
-        <Card className="w-full max-w-md bg-white/10 backdrop-blur-sm border-gray-700">
+      <div className="min-h-screen bg-gradient-to-br from-blue-950 to-indigo-900 flex items-center justify-center">
+        <Card className="w-full max-w-md bg-white/10 backdrop-blur-sm border-blue-800/50">
           <CardHeader>
             <CardTitle className="text-xl font-bold text-white">Fehler beim Laden der Daten</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-300">{error}</p>
-            <p className="text-gray-400 mt-2">Bitte überprüfen Sie:</p>
-            <ul className="list-disc list-inside text-gray-400 mt-2">
+            <p className="text-blue-100">{error}</p>
+            <p className="text-blue-200 mt-2">Bitte überprüfen Sie:</p>
+            <ul className="list-disc list-inside text-blue-200 mt-2">
               <li>Ihre Internetverbindung</li>
               <li>Ob Sie angemeldet sind</li>
               <li>Ob Projekte angelegt wurden</li>
@@ -355,12 +364,12 @@ export default function MonthlyStats() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
-      <header className="bg-gray-800/50 backdrop-blur-sm shadow-lg">
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 to-indigo-900">
+      <header className="bg-blue-900/30 backdrop-blur-md shadow-lg border-b border-blue-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-white">Monatliche Statistik</h1>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Monatliche Statistik</h1>
           <Link href="/dashboard">
-            <Button variant="outline" className="bg-white/10 text-white hover:bg-white/20 transition-colors duration-300">
+            <Button variant="outline" className="bg-blue-100/10 text-blue-100 hover:bg-blue-100/20 border-blue-300/30 backdrop-blur-sm transition-all duration-300">
               <LayoutDashboard className="mr-2 h-4 w-4" />
               Dashboard
             </Button>
@@ -369,17 +378,17 @@ export default function MonthlyStats() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Card className="bg-white/10 backdrop-blur-sm border-gray-700">
-          <CardHeader className="border-b border-gray-700">
-            <CardTitle className="text-2xl font-bold text-white">Anrufe verwalten</CardTitle>
+        <Card className="bg-white/95 shadow-2xl border-blue-200/50 backdrop-blur-sm">
+          <CardHeader className="border-b border-blue-100/50 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <CardTitle className="text-2xl font-bold text-blue-900 flex items-center">Anrufe verwalten</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="mb-4">
               <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-[200px] bg-gray-700 text-white border-gray-600">
+                <SelectTrigger className="w-[200px] bg-white border-gray-300 text-gray-700">
                   <SelectValue placeholder="Monat auswählen" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 text-white border-gray-700">
+                <SelectContent className="bg-white border-gray-200">
                   <SelectItem value="all">Alle Monate</SelectItem>
                   {monthOptions.map((month) => (
                     <SelectItem key={month} value={month}>
@@ -390,10 +399,10 @@ export default function MonthlyStats() {
               </Select>
             </div>
             <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList key="tabsList" className="bg-gray-800 p-1 rounded-lg flex flex-wrap gap-2">
+              <TabsList key="tabsList" className="bg-blue-50 p-1 rounded-lg flex flex-wrap gap-2">
                 <TabsTrigger 
                   value="all"
-                  className="px-4 py-2 rounded-md text-sm font-medium transition-colors data-[state=active]:bg-white data-[state=active]:text-gray-800"
+                  className="px-4 py-2 rounded-md text-sm font-medium transition-colors text-blue-700 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
                 >
                   Alle Anrufe
                 </TabsTrigger>
@@ -401,41 +410,41 @@ export default function MonthlyStats() {
                   <TabsTrigger 
                     key={`tab-${stat.id}`} 
                     value={stat.id.toString()} 
-                    className="px-4 py-2 rounded-md text-sm font-medium transition-colors data-[state=active]:bg-white data-[state=active]:text-gray-800"
+                    className="px-4 py-2 rounded-md text-sm font-medium transition-colors text-blue-700 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
                   >
                     {stat.display_name}
                   </TabsTrigger>
                 ))}
               </TabsList>
               <TabsContent value="all">
-                <div className="overflow-x-auto rounded-lg border border-gray-700">
+                <div className="overflow-x-auto rounded-lg border border-blue-200">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-b border-gray-700">
-                        <TableHead className="text-white">Projekt</TableHead>
-                        <TableHead className="text-white">Gesamtanrufe</TableHead>
-                        <TableHead className="text-white">Abrechenbare Anrufe</TableHead>
-                        <TableHead className="text-white">Gesamtdauer</TableHead>
-                        <TableHead className="text-white">Gesamtverdienst</TableHead>
+                      <TableRow className="border-b border-blue-200 bg-blue-50">
+                        <TableHead className="text-blue-900 font-semibold">Projekt</TableHead>
+                        <TableHead className="text-blue-900 font-semibold">Gesamtanrufe</TableHead>
+                        <TableHead className="text-blue-900 font-semibold">Abrechenbare Anrufe</TableHead>
+                        <TableHead className="text-blue-900 font-semibold">Gesamtdauer</TableHead>
+                        <TableHead className="text-blue-900 font-semibold">Gesamtverdienst</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredStats.map(stat => (
-                        <TableRow key={`row-${stat.id}`} className="border-b border-gray-700">
-                          <TableCell className="font-medium text-white">{stat.display_name}</TableCell>
-                          <TableCell className="text-white">{stat.totalCalls}</TableCell>
-                          <TableCell className="text-white">{stat.billableCalls}</TableCell>
-                          <TableCell className="text-white">{formatDuration(stat.totalDuration)}</TableCell>
-                          <TableCell className="text-white">{formatCurrency(stat.totalEarnings)}</TableCell>
+                        <TableRow key={`row-${stat.id}`} className="border-b border-blue-100">
+                          <TableCell className="font-medium text-blue-800">{stat.display_name}</TableCell>
+                          <TableCell className="text-blue-800">{stat.totalCalls}</TableCell>
+                          <TableCell className="text-blue-800">{stat.billableCalls}</TableCell>
+                          <TableCell className="text-blue-800">{formatDuration(stat.totalDuration)}</TableCell>
+                          <TableCell className="text-blue-800"><span className="text-blue-600 font-semibold">{formatCurrency(stat.totalEarnings)}</span></TableCell>
                         </TableRow>
                       ))}
                       {totalStats && (
-                        <TableRow className="font-bold border-t border-gray-700">
-                          <TableCell className="text-white">Gesamt</TableCell>
-                          <TableCell className="text-white">{totalStats.totalCalls}</TableCell>
-                          <TableCell className="text-white">{totalStats.billableCalls}</TableCell>
-                          <TableCell className="text-white">{formatDuration(totalStats.totalDuration)}</TableCell>
-                          <TableCell className="text-white">{formatCurrency(totalStats.totalEarnings)}</TableCell>
+                        <TableRow className="font-bold border-t border-blue-200 bg-blue-50">
+                          <TableCell className="text-blue-900">Gesamt</TableCell>
+                          <TableCell className="text-blue-900">{totalStats.totalCalls}</TableCell>
+                          <TableCell className="text-blue-900">{totalStats.billableCalls}</TableCell>
+                          <TableCell className="text-blue-900">{formatDuration(totalStats.totalDuration)}</TableCell>
+                          <TableCell className="text-blue-900"><span className="text-blue-700">{formatCurrency(totalStats.totalEarnings)}</span></TableCell>
                         </TableRow>
                       )}
                     </TableBody>
@@ -445,9 +454,9 @@ export default function MonthlyStats() {
               {filteredStats.map(stat => (
                 <TabsContent key={stat.id} value={stat.id.toString()}>
                   <div className="space-y-6">
-                    <Card className="bg-white/10 backdrop-blur-sm border-gray-700">
+                    <Card className="bg-white shadow-lg border-blue-200/50">
                       <CardHeader>
-                        <CardTitle className="text-xl font-bold text-white">{stat.display_name} - Übersicht</CardTitle>
+                        <CardTitle className="text-xl font-bold text-blue-900">{stat.display_name} - Übersicht</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -493,7 +502,7 @@ export default function MonthlyStats() {
                                   [{ label: "Vergütung pro Anruf", value: formatCurrency(stat.per_call_rate || 0) }] : 
                                   []
                                 ),
-                                { label: "Mindestdauer für Abrechnung", value: `${stat.min_duration} Sek.` },
+                                { label: "Mindestdauer für Abr.", value: `${stat.min_duration} Sek.` },
                                 { label: "Minuten aufrunden", value: stat.round_up_minutes ? 'Ja' : 'Nein' },
                               ]}
                             />
@@ -502,21 +511,26 @@ export default function MonthlyStats() {
                       </CardContent>
                     </Card>
                     
-                    <Card className="bg-white/10 backdrop-blur-sm border-gray-700">
+                    <Card className="bg-white shadow-lg border-blue-200/50">
                       <CardHeader>
-                        <CardTitle className="text-xl font-bold text-white">Anrufverteilung nach Dauer</CardTitle>
+                        <CardTitle className="text-xl font-bold text-blue-900">Anrufverteilung nach Dauer</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {Object.entries(stat.durationDistribution).map(([category, count]) => (
-                            <div key={category} className="bg-white/10 p-4 rounded-lg shadow">
+                            <div key={category} className="bg-blue-50 p-4 rounded-lg shadow">
                               <div className="flex justify-between items-center mb-2">
-                                <span className="font-medium text-white">{category}</span>
-                                <span className="text-sm text-gray-300">
+                                <span className="font-medium text-blue-800">{category}</span>
+                                <span className="text-sm text-blue-600">
                                   {count} Anrufe ({((count / stat.totalCalls) * 100).toFixed(1)}%)
                                 </span>
                               </div>
-                              <Progress value={(count / stat.totalCalls) * 100} className="h-2" />
+                              <div className="w-full bg-blue-200 rounded-full h-2.5">
+                                <div
+                                  className="bg-blue-600 h-2.5 rounded-full"
+                                  style={{ width: `${(count / stat.totalCalls) * 100}%` }}
+                                ></div>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -524,9 +538,9 @@ export default function MonthlyStats() {
                     </Card>
                     
                     {stat.id !== 'unassigned' && 'payment_model' in stat && stat.payment_model === 'custom' && (
-                      <Card className="bg-white/10 backdrop-blur-sm border-gray-700">
+                      <Card className="bg-white shadow-lg border-blue-200/50">
                         <CardHeader>
-                          <CardTitle className="text-xl font-bold text-white">Vergütung nach Anrufdauer</CardTitle>
+                          <CardTitle className="text-xl font-bold text-blue-900">Vergütung nach Anrufdauer</CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-4">
@@ -534,16 +548,16 @@ export default function MonthlyStats() {
                               value={selectedDurationFilter}
                               onValueChange={setSelectedDurationFilter}
                             >
-                              <SelectTrigger className="w-full bg-gray-700 text-white border-gray-600">
+                              <SelectTrigger className="w-full bg-white border-gray-300 text-gray-700">
                                 <SelectValue placeholder="Wählen Sie einen Zeitraum" />
                               </SelectTrigger>
-                              <SelectContent className="bg-gray-800 text-white border-gray-700">
-                                <SelectItem value="all" className="py-2 px-4 hover:bg-gray-700">Alle Anrufe</SelectItem>
+                              <SelectContent className="bg-white border-gray-200">
+                                <SelectItem value="all" className="py-2 px-4 hover:bg-blue-50">Alle Anrufe</SelectItem>
                                 {stat.earningsDistribution.map((dist, index) => (
                                   <SelectItem 
                                     key={index} 
                                     value={dist.range} 
-                                    className="py-2 px-4 hover:bg-gray-700 whitespace-nowrap"
+                                    className="py-2 px-4 hover:bg-blue-50 whitespace-nowrap"
                                   >
                                     {dist.range}
                                   </SelectItem>
@@ -553,20 +567,20 @@ export default function MonthlyStats() {
                             <div className="overflow-x-auto">
                               <Table>
                                 <TableHeader>
-                                  <TableRow className="border-b border-gray-700">
-                                    <TableHead className="text-white">Dauer</TableHead>
-                                    <TableHead className="text-white">Anzahl Anrufe</TableHead>
-                                    <TableHead className="text-white">Gesamtverdienst</TableHead>
+                                  <TableRow className="border-b border-blue-200 bg-blue-50">
+                                    <TableHead className="text-blue-900">Dauer</TableHead>
+                                    <TableHead className="text-blue-900">Anzahl Anrufe</TableHead>
+                                    <TableHead className="text-blue-900">Gesamtverdienst</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                   {stat.earningsDistribution
                                     .filter(dist => selectedDurationFilter === 'all' || selectedDurationFilter === dist.range)
                                     .map((dist, index) => (
-                                      <TableRow key={index} className="border-b border-gray-700">
-                                        <TableCell className="text-white">{dist.range}</TableCell>
-                                        <TableCell className="text-white">{dist.count}</TableCell>
-                                        <TableCell className="text-white">{formatCurrency(dist.earnings)}</TableCell>
+                                      <TableRow key={index} className="border-b border-blue-100">
+                                        <TableCell className="text-blue-800">{dist.range}</TableCell>
+                                        <TableCell className="text-blue-800">{dist.count}</TableCell>
+                                        <TableCell className="text-blue-800">{formatCurrency(dist.earnings)}</TableCell>
                                       </TableRow>
                                     ))
                                   }
@@ -590,19 +604,19 @@ export default function MonthlyStats() {
 
 function StatCard({ icon, title, items }: {icon: React.ReactNode; title: string; items: {label: string; value: string | number}[]}) {
   return (
-    <Card className="overflow-hidden bg-white/10 backdrop-blur-sm border-gray-700">
-      <CardHeader className="bg-gray-800 border-b border-gray-700">
-        <CardTitle className="text-lg font-semibold flex items-center text-white">
+    <Card className="overflow-hidden bg-blue-50 border-blue-200/50 shadow-md hover:shadow-lg transition-shadow duration-300">
+      <CardHeader className="bg-blue-100/50 border-b border-blue-200/50">
+        <CardTitle className="text-lg font-semibold flex items-center text-blue-900">
           {icon}
           <span className="ml-2">{title}</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <ul className="divide-y divide-gray-700">
+        <ul className="divide-y divide-blue-200">
           {items.map((item, index) => (
-            <li key={index} className="flex justify-between items-center p-4 hover:bg-gray-700">
-              <span className="text-sm font-medium text-gray-300">{item.label}</span>
-              <span className="text-sm font-semibold text-white">{item.value}</span>
+            <li key={index} className="flex justify-between items-center p-4 hover:bg-blue-100/50 transition-colors duration-200">
+              <span className="text-sm font-medium text-blue-700">{item.label}</span>
+              <span className="text-sm font-semibold text-blue-900">{item.value}</span>
             </li>
           ))}
         </ul>

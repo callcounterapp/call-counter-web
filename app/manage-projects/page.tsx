@@ -88,12 +88,12 @@ export default function ManageProjects() {
   }, [fetchProjects])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
-      <header className="bg-gray-800/50 backdrop-blur-sm shadow-lg">
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 to-indigo-900">
+      <header className="bg-blue-900/30 backdrop-blur-md shadow-lg border-b border-blue-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-white">Projekte verwalten</h1>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Projekte verwalten</h1>
           <Link href="/dashboard">
-            <Button variant="outline" className="bg-white/10 text-white hover:bg-white/20 transition-colors duration-300">
+            <Button variant="outline" className="bg-blue-100/10 text-blue-100 hover:bg-blue-100/20 border-blue-300/30 backdrop-blur-sm transition-all duration-300">
               <LayoutDashboard className="mr-2 h-4 w-4" />
               Dashboard
             </Button>
@@ -102,9 +102,9 @@ export default function ManageProjects() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Card className="bg-white/10 backdrop-blur-sm border-gray-700">
-          <CardHeader className="border-b border-gray-700">
-            <CardTitle className="text-2xl font-bold text-white">Projekte einrichten und verwalten</CardTitle>
+        <Card className="bg-white/95 shadow-2xl border-blue-200/50 backdrop-blur-sm">
+          <CardHeader className="border-b border-blue-100/50 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <CardTitle className="text-2xl font-bold text-blue-900">Projekte einrichten und verwalten</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             <ProjectSetup projects={projects} setProjects={setProjects} />
@@ -233,7 +233,30 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
       return
     }
 
-    if (window.confirm('Sind Sie sicher, dass Sie dieses Projekt löschen möchten?')) {
+    // Zeige den benutzerdefinierten Dialog an
+    const confirmed = await new Promise<boolean>((resolve) => {
+      const dialog = document.createElement('div')
+      dialog.innerHTML = `
+        <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div class="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <h2 class="text-lg mb-4 text-blue-900">Sind Sie sicher, dass Sie dieses Projekt löschen möchten?</h2>
+            <div class="flex justify-end gap-2">
+              <button class="px-4 py-2 bg-blue-100 text-blue-900 hover:bg-blue-200 rounded-md" onclick="this.closest('.fixed').remove(); window.tempResolve(false)">
+                Abbrechen
+              </button>
+              <button class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-md" onclick="this.closest('.fixed').remove(); window.tempResolve(true)">
+                Löschen
+              </button>
+            </div>
+          </div>
+        </div>
+      `
+      document.body.appendChild(dialog)
+      // @ts-expect-error Temporäre Lösung für den Dialog - wird in Zukunft durch eine React-Komponente ersetzt
+      window.tempResolve = resolve
+    })
+
+    if (confirmed) {
       try {
         const { error } = await supabase
           .from('projects')
@@ -277,50 +300,50 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
 
   return (
     <div className="space-y-8">
-      <Card className="bg-gray-800 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-white">
+      <Card className="bg-white border-blue-200">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
+          <CardTitle className="text-2xl font-bold text-blue-900">
             {editMode ? 'Projekt bearbeiten' : 'Projekt einrichten'}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="space-y-6">
             <div>
-              <Label htmlFor="internalName" className="text-white">Interner Projektname</Label>
+              <Label htmlFor="internalName" className="text-blue-900">Interner Projektname</Label>
               <Input
                 id="internalName"
                 value={newProject.internal_name}
                 onChange={(e) => setNewProject({ ...newProject, internal_name: e.target.value })}
-                placeholder="Internen Projektnamen eingeben (z.B. *50)"
-                className="bg-gray-700 text-white border-gray-600"
+                placeholder="Internen Projektnamen eingeben (z.B. VGN)"
+                className="bg-blue-50 border-blue-200 text-blue-900 placeholder-blue-400"
               />
               <InfoText>
                 Geben Sie hier den internen Namen des Projekts ein. Dieser wird für die Zuordnung und Berechnung verwendet.
               </InfoText>
             </div>
             <div>
-              <Label htmlFor="displayName" className="text-white">Anzeigename des Projekts</Label>
+              <Label htmlFor="displayName" className="text-blue-900">Anzeigename des Projekts</Label>
               <Input
                 id="displayName"
                 value={newProject.display_name}
                 onChange={(e) => setNewProject({ ...newProject, display_name: e.target.value })}
-                placeholder="Anzeigenamen eingeben (z.B. ABCOutcall)"
-                className="bg-gray-700 text-white border-gray-600"
+                placeholder="Anzeigenamen eingeben (z.B. VGN Media Holding)"
+                className="bg-blue-50 border-blue-200 text-blue-900 placeholder-blue-400"
               />
               <InfoText>
                 Geben Sie hier den Anzeigenamen des Projekts ein. Dieser wird in Anruflisten und Statistiken angezeigt.
               </InfoText>
             </div>
             <div>
-              <Label className="text-white">Vergütungsmodell</Label>
+              <Label className="text-blue-900">Vergütungsmodell</Label>
               <Select
                 value={newProject.payment_model}
                 onValueChange={(value) => setNewProject({ ...newProject, payment_model: value as 'custom' | 'perMinute' | 'perCall' })}
               >
-                <SelectTrigger className="w-full mb-2 bg-gray-700 text-white border-gray-600">
+                <SelectTrigger className="w-full mb-2 bg-blue-50 text-blue-900 border-blue-200">
                   <SelectValue placeholder="Wählen Sie ein Vergütungsmodell" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 text-white border-gray-700">
+                <SelectContent className="bg-white text-blue-900 border-blue-200">
                   <SelectItem value="custom">Benutzerdefiniert</SelectItem>
                   <SelectItem value="perMinute">Pro Minute</SelectItem>
                   <SelectItem value="perCall">Pro Anruf</SelectItem>
@@ -331,9 +354,9 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
                   id="roundUpMinutes"
                   checked={newProject.round_up_minutes}
                   onCheckedChange={(checked) => setNewProject({ ...newProject, round_up_minutes: checked as boolean })}
-                  className="bg-gray-700 border-gray-600"
+                  className="bg-blue-50 border-blue-200"
                 />
-                <Label htmlFor="roundUpMinutes" className="text-white">Minuten aufrunden</Label>
+                <Label htmlFor="roundUpMinutes" className="text-blue-900">Minuten aufrunden</Label>
               </div>
               <InfoText>
                 Wenn aktiviert, werden angebrochene Minuten auf volle Minuten aufgerundet.
@@ -341,7 +364,7 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
             </div>
             {newProject.payment_model === 'custom' && (
               <div>
-                <Label className="text-white">Benutzerdefiniertes Vergütungsmodell</Label>
+                <Label className="text-blue-900">Benutzerdefiniertes Vergütungsmodell</Label>
                 <div className="space-y-2">
                   {newProject.custom_rates.map((rate, index) => (
                     <div key={index} className="flex space-x-2 items-end">
@@ -351,7 +374,7 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
                           value={rate.minDuration}
                           onChange={(e) => updateCustomRate(index, 'minDuration', Number(e.target.value))}
                           placeholder="Min. Dauer (Sek.)"
-                          className="bg-gray-700 text-white border-gray-600"
+                          className="bg-blue-50 border-blue-200 text-blue-900 placeholder-blue-400"
                         />
                         <InfoText>Mindestdauer in Sekunden</InfoText>
                       </div>
@@ -361,7 +384,7 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
                           value={rate.maxDuration}
                           onChange={(e) => updateCustomRate(index, 'maxDuration', Number(e.target.value))}
                           placeholder="Max. Dauer (Sek.)"
-                          className="bg-gray-700 text-white border-gray-600"
+                          className="bg-blue-50 border-blue-200 text-blue-900 placeholder-blue-400"
                         />
                         <InfoText>Maximaldauer in Sekunden</InfoText>
                       </div>
@@ -371,16 +394,16 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
                           value={rate.rate}
                           onChange={(e) => updateCustomRate(index, 'rate', Number(e.target.value))}
                           placeholder="Vergütung (Cent)"
-                          className="bg-gray-700 text-white border-gray-600"
+                          className="bg-blue-50 border-blue-200 text-blue-900 placeholder-blue-400"
                         />
                         <InfoText>Vergütung in Cent (z.B. 40,50 für 40,50 Cent)</InfoText>
                       </div>
-                      <Button onClick={() => removeCustomRate(index)} variant="outline" size="icon" className="bg-gray-700 text-white hover:bg-gray-600">
+                      <Button onClick={() => removeCustomRate(index)} variant="outline" size="icon" className="bg-blue-100 text-blue-900 hover:bg-blue-200 border-blue-300">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   ))}
-                  <Button onClick={addCustomRate} variant="outline" className="w-full bg-gray-700 text-white hover:bg-gray-600">
+                  <Button onClick={addCustomRate} variant="outline" className="w-full bg-blue-100 text-blue-900 hover:bg-blue-200 border-blue-300">
                     <Plus className="h-4 w-4 mr-2" /> Weitere Vergütungsstufe hinzufügen
                   </Button>
                 </div>
@@ -392,14 +415,14 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
             )}
             {newProject.payment_model === 'perMinute' && (
               <div>
-                <Label htmlFor="perMinuteRate" className="text-white">Vergütung pro Minute (in Cent)</Label>
+                <Label htmlFor="perMinuteRate" className="text-blue-900">Vergütung pro Minute (in Cent)</Label>
                 <Input
                   id="perMinuteRate"
                   type="number"
                   value={newProject.per_minute_rate}
                   onChange={(e) => setNewProject({ ...newProject, per_minute_rate: Number(e.target.value) })}
                   placeholder="Vergütung in Cent (z.B. 40,50 für 40,50 Cent)"
-                  className="bg-gray-700 text-white border-gray-600"
+                  className="bg-blue-50 border-blue-200 text-blue-900 placeholder-blue-400"
                 />
                 <InfoText>
                   Geben Sie hier den Betrag in Cent ein, der pro Minute vergütet wird.
@@ -408,14 +431,14 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
             )}
             {newProject.payment_model === 'perCall' && (
               <div>
-                <Label htmlFor="perCallRate" className="text-white">Vergütung pro Anruf (in Cent)</Label>
+                <Label htmlFor="perCallRate" className="text-blue-900">Vergütung pro Anruf (in Cent)</Label>
                 <Input
                   id="perCallRate"
                   type="number"
                   value={newProject.per_call_rate}
                   onChange={(e) => setNewProject({ ...newProject, per_call_rate: Number(e.target.value) })}
                   placeholder="Vergütung in Cent (z.B. 40,50 für 40,50 Cent)"
-                  className="bg-gray-700 text-white border-gray-600"
+                  className="bg-blue-50 border-blue-200 text-blue-900 placeholder-blue-400"
                 />
                 <InfoText>
                   Geben Sie hier den Betrag in Cent ein, der pro Anruf vergütet wird.
@@ -423,13 +446,13 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
               </div>
             )}
             <div>
-              <Label htmlFor="minDuration" className="text-white">Mindestdauer für Abrechnung (in Sekunden)</Label>
+              <Label htmlFor="minDuration" className="text-blue-900">Mindestdauer für Abrechnung (in Sekunden)</Label>
               <Input
                 id="minDuration"
                 type="number"
                 value={newProject.min_duration}
                 onChange={(e) => setNewProject({ ...newProject, min_duration: Number(e.target.value) })}
-                className="bg-gray-700 text-white border-gray-600"
+                className="bg-blue-50 border-blue-200 text-blue-900 placeholder-blue-400"
               />
               <InfoText>
                 Geben Sie hier die Mindestdauer in Sekunden ein, ab der ein Anruf vergütet wird.
@@ -440,7 +463,7 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
               {editMode ? 'Projekt aktualisieren' : 'Projekt hinzufügen'}
             </Button>
             {editMode && (
-              <Button onClick={resetForm} variant="outline" className="ml-2 bg-gray-700 text-white hover:bg-gray-600">
+              <Button onClick={resetForm} variant="outline" className="ml-2 bg-blue-100 text-blue-900 hover:bg-blue-200 border-blue-300">
                 Abbrechen
               </Button>
             )}
@@ -448,35 +471,35 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
         </CardContent>
       </Card>
 
-      <Card className="bg-gray-800 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-white">Vorhandene Projekte</CardTitle>
+      <Card className="bg-white border-blue-200">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
+          <CardTitle className="text-2xl font-bold text-blue-900">Vorhandene Projekte</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {projects.length === 0 ? (
-            <p className="text-center text-gray-400">Keine Projekte vorhanden.</p>
+            <p className="text-center text-blue-600">Keine Projekte vorhanden.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {projects.map((project) => (
-                <Card key={project.id} className="bg-gray-700 shadow-md hover:shadow-lg transition-shadow duration-300">
-                  <CardHeader className="bg-gray-800 border-b border-gray-600">
-                    <CardTitle className="text-lg font-semibold flex justify-between items-center text-white">
+                <Card key={project.id} className="bg-blue-50 shadow-md hover:shadow-lg transition-shadow duration-300 border border-blue-200">
+                  <CardHeader className="bg-gradient-to-r from-blue-100 to-indigo-100 border-b border-blue-200">
+                    <CardTitle className="text-lg font-semibold flex justify-between items-center text-blue-900">
                       <span>{project.display_name}</span>
                       <div className="flex space-x-2">
-                        <Button onClick={() => editProject(project)} variant="ghost" size="sm" className="text-gray-300 hover:text-white">
+                        <Button onClick={() => editProject(project)} variant="ghost" size="sm" className="text-blue-700 hover:text-blue-900 hover:bg-blue-200">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button onClick={() => deleteProject(project.id)} variant="ghost" size="sm" className="text-gray-300 hover:text-white">
+                        <Button onClick={() => deleteProject(project.id)} variant="ghost" size="sm" className="text-blue-700 hover:text-blue-900 hover:bg-blue-200">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-4">
-                    <div className="space-y-3 text-gray-300">
-                      <div className="bg-gray-800 p-3 rounded-md shadow-sm">
-                        <h4 className="text-sm font-semibold mb-2 flex items-center text-white">
-                          <BarChart className="h-4 w-4 mr-2 text-blue-500" />
+                    <div className="space-y-3 text-blue-800">
+                      <div className="bg-white p-3 rounded-md shadow-sm border border-blue-100">
+                        <h4 className="text-sm font-semibold mb-2 flex items-center text-blue-900">
+                          <BarChart className="h-4 w-4 mr-2 text-blue-600" />
                           Projektdetails
                         </h4>
                         <p className="text-sm">
@@ -510,15 +533,15 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
                           </p>
                         )}
                       </div>
-                      <div className="bg-gray-800 p-3 rounded-md shadow-sm">
+                      <div className="bg-white p-3 rounded-md shadow-sm border border-blue-100">
                         <p className="text-sm">
                           <span className="font-medium">Mindestdauer:</span> {project.min_duration} Sek.
                         </p>
                       </div>
                       {project.payment_model === 'custom' && (
-                        <div className="bg-gray-800 p-3 rounded-md shadow-sm">
-                          <h4 className="text-sm font-semibold mb-2 flex items-center text-white">
-                            <BarChart className="h-4 w-4 mr-2 text-green-500" />
+                        <div className="bg-white p-3 rounded-md shadow-sm border border-blue-100">
+                          <h4 className="text-sm font-semibold mb-2 flex items-center text-blue-900">
+                            <BarChart className="h-4 w-4 mr-2 text-blue-600" />
                             Vergütungsübersicht
                           </h4>
                           <div className="space-y-1">
@@ -545,8 +568,8 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
 
 function InfoText({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-start mt-2 mb-4 text-sm text-gray-400">
-      <Info className="mr-1 h-4 w-4 text-blue-400 flex-shrink-0" />
+    <div className="flex items-start mt-2 mb-4 text-sm text-blue-600">
+      <Info className="mr-1 h-4 w-4 text-blue-500 flex-shrink-0" />
       <p className="flex-1">{children}</p>
     </div>
   )

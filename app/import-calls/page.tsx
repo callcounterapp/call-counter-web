@@ -84,7 +84,6 @@ export default function ImportCallsPage() {
       const lines = content.split('\n')
       const calls: Call[] = []
       let newCallsCount = 0
-      // let skippedCallsCount = 0
 
       lines.slice(1).filter(line => line.trim()).forEach((line) => {
         const [type, name, number, timeStr, durationStr, info] = line.split(',').map(item => item?.trim() ?? '')
@@ -101,8 +100,6 @@ export default function ImportCallsPage() {
         
         if (validateCall(call)) {
           calls.push(call as Call)
-        } else {
-          // skippedCallsCount++
         }
       })
 
@@ -153,33 +150,33 @@ export default function ImportCallsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex flex-col items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-white/10 backdrop-blur-sm border-gray-700 shadow-xl">
-        <CardHeader className="space-y-1">
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 to-indigo-900 flex flex-col items-center justify-center p-4">
+      <Card className="w-full max-w-md bg-white/95 shadow-2xl border-blue-200/50 backdrop-blur-sm">
+        <CardHeader className="space-y-1 border-b border-blue-100/50 bg-gradient-to-r from-blue-50 to-indigo-50">
           <div className="flex items-center justify-between mb-2">
             <Link 
               href="/dashboard" 
-              className="text-blue-400 hover:text-blue-300 transition-colors duration-200 flex items-center gap-2"
+              className="text-blue-600 hover:text-blue-800 transition-colors duration-200 flex items-center gap-2"
             >
               <ArrowLeft size={16} />
               <span className="text-xs font-medium">Zurück</span>
             </Link>
           </div>
-          <CardTitle className="text-2xl font-bold text-center text-white">Anrufe importieren</CardTitle>
-          <CardDescription className="text-center text-gray-400 text-sm">
+          <CardTitle className="text-2xl font-bold text-center text-blue-900">Anrufe importieren</CardTitle>
+          <CardDescription className="text-center text-blue-600 text-sm">
             Laden Sie Ihre CSV-Datei mit Anrufdaten hoch
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <form onSubmit={(e) => {e.preventDefault(); handleImport()}} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="file-upload" className="sr-only">CSV-Datei auswählen</Label>
               <div className="flex items-center justify-center w-full">
-                <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-700 hover:bg-gray-600 transition-colors duration-200">
+                <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-200 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors duration-200">
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="w-8 h-8 mb-3 text-gray-400" />
-                    <p className="mb-2 text-sm text-gray-400"><span className="font-semibold">Klicken</span> oder Datei hierher ziehen</p>
-                    <p className="text-xs text-gray-500">{fileName || 'CSV-Datei auswählen'}</p>
+                    <Upload className="w-8 h-8 mb-3 text-blue-500" />
+                    <p className="mb-2 text-sm text-blue-700"><span className="font-semibold">Klicken</span> oder Datei hierher ziehen</p>
+                    <p className="text-xs text-blue-600">{fileName || 'CSV-Datei auswählen'}</p>
                   </div>
                   <Input
                     id="file-upload"
@@ -201,8 +198,8 @@ export default function ImportCallsPage() {
             </Button>
           </form>
           {importStatus && (
-            <div className="mt-4 p-3 rounded-lg bg-blue-500/20 border border-blue-500/30">
-              <p className="text-xs text-white text-center">{importStatus}</p>
+            <div className="mt-4 p-3 rounded-lg bg-blue-100 border border-blue-300">
+              <p className="text-xs text-blue-800 text-center">{importStatus}</p>
             </div>
           )}
         </CardContent>

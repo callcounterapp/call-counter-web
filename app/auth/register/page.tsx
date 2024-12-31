@@ -37,7 +37,7 @@ export default function RegisterPage() {
       if (error) {
         setError(message)
       } else {
-        setSuccess(message)
+        setSuccess('Registrierung erfolgreich. Ein Administrator wird Ihr Konto in Kürze freischalten. Sie erhalten eine Bestätigungs-E-Mail.')
         setTimeout(() => {
           router.push('/auth/login')
         }, 2000)
@@ -49,34 +49,34 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex flex-col items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-white/10 backdrop-blur-sm border-gray-800">
-        <CardHeader className="space-y-1">
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 to-indigo-900 flex flex-col items-center justify-center p-4">
+      <Card className="w-full max-w-md bg-white/95 shadow-2xl border-blue-200/50 backdrop-blur-sm">
+        <CardHeader className="space-y-1 border-b border-blue-100/50 bg-gradient-to-r from-blue-50 to-indigo-50">
           <div className="flex items-center gap-2 mb-4">
             <Link 
               href="/" 
-              className="text-gray-300 hover:text-white flex items-center gap-2"
+              className="text-blue-600 hover:text-blue-800 flex items-center gap-2 transition-colors duration-200"
             >
               <ArrowLeft size={20} />
               Zurück
             </Link>
           </div>
-          <CardTitle className="text-2xl font-bold text-center text-white">Registrieren</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center text-blue-900">Registrieren</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-200 rounded">
+            <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-800 rounded">
               {error}
             </div>
           )}
           {success && (
-            <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 text-green-200 rounded">
+            <div className="mb-4 p-3 bg-green-100 border border-green-300 text-green-800 rounded">
               {success}
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-200">E-Mail</Label>
+              <Label htmlFor="email" className="text-blue-900">E-Mail</Label>
               <Input
                 id="email"
                 type="email"
@@ -84,11 +84,11 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-white/10 border-gray-700 text-white placeholder:text-gray-400"
+                className="bg-blue-50 border-blue-200 text-blue-900 placeholder:text-blue-400"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-gray-200">Name</Label>
+              <Label htmlFor="name" className="text-blue-900">Name</Label>
               <Input
                 id="name"
                 type="text"
@@ -96,11 +96,11 @@ export default function RegisterPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="bg-white/10 border-gray-700 text-white placeholder:text-gray-400"
+                className="bg-blue-50 border-blue-200 text-blue-900 placeholder:text-blue-400"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="company" className="text-gray-200">Benutzername</Label>
+              <Label htmlFor="company" className="text-blue-900">Benutzername</Label>
               <Input
                 id="company"
                 type="text"
@@ -108,41 +108,41 @@ export default function RegisterPage() {
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
                 required
-                className="bg-white/10 border-gray-700 text-white placeholder:text-gray-400"
+                className="bg-blue-50 border-blue-200 text-blue-900 placeholder:text-blue-400"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-200">Passwort</Label>
+              <Label htmlFor="password" className="text-blue-900">Passwort</Label>
               <Input
                 id="password"
                 type="password"
-				placeholder="Passwort"
+                placeholder="Passwort"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="bg-white/10 border-gray-700 text-white"
+                className="bg-blue-50 border-blue-200 text-blue-900"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-gray-200">Passwort bestätigen</Label>
+              <Label htmlFor="confirmPassword" className="text-blue-900">Passwort bestätigen</Label>
               <Input
                 id="confirmPassword"
                 type="password"
-				placeholder="Passwort wiederholen"
+                placeholder="Passwort wiederholen"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="bg-white/10 border-gray-700 text-white"
+                className="bg-blue-50 border-blue-200 text-blue-900"
               />
             </div>
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-200">
               Registrieren
             </Button>
           </form>
           
-          <div className="mt-4 text-center text-sm text-gray-300">
+          <div className="mt-4 text-center text-sm text-blue-700">
             Bereits registriert?{' '}
-            <Link href="/auth/login" className="text-blue-400 hover:text-blue-300">
+            <Link href="/auth/login" className="text-blue-600 hover:text-blue-800 transition-colors duration-200">
               Jetzt anmelden
             </Link>
           </div>

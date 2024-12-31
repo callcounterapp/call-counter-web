@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import UsersList from '@/components/UsersList'
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
+import Link from 'next/link'
+import { Button } from "@/components/ui/button"
+import { LayoutDashboard } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,7 +55,7 @@ export default function AdminUsersPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex justify-center items-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-950 to-indigo-900 flex justify-center items-center">
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     )
@@ -66,18 +66,21 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-gray-100 p-6 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-          <h1 className="text-3xl font-bold text-blue-400">Benutzerverwaltung</h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 to-indigo-900">
+      <header className="bg-blue-900/30 backdrop-blur-md shadow-lg border-b border-blue-800/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-white tracking-tight">Benutzerverwaltung</h1>
           <Link href="/dashboard">
-            <Button variant="outline" className="text-blue-400 border-blue-400 hover:bg-blue-400 hover:text-gray-900">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Zurück zum Dashboard
+            <Button variant="outline" className="bg-blue-100/10 text-blue-100 hover:bg-blue-100/20 border-blue-300/30 backdrop-blur-sm transition-all duration-300">
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              Dashboard
             </Button>
           </Link>
-        </header>
+        </div>
+      </header>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <UsersList key={Date.now()} isLoading={isLoading} />
-      </div>
+      </main>
     </div>
   )
 }
