@@ -219,109 +219,135 @@ export default function MonthlyBilling() {
   }
 
   const exportToPDF = async () => {
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const monthDate = new Date(parseInt(selectedMonth.split('-')[0]), parseInt(selectedMonth.split('-')[1]) - 1, 1);
-    const monthName = monthDate.toLocaleString('de-DE', { month: 'long', year: 'numeric' });
-    const invoiceNumber = `INV-${selectedMonth}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`
-    const currentDate = new Date().toLocaleDateString('de-DE')
+    try {
+      const { data: profiles, error: profilesError } = await supabase.auth.getUser()
+      if (profilesError) throw profilesError
 
-    // Load company data
-    const savedCompanyData = localStorage.getItem('companyData')
-    const companyData = savedCompanyData ? JSON.parse(savedCompanyData) : {
-      name: 'Ihre Firma GmbH',
-      street: 'Musterstraße 123',
-      city: 'Musterstadt',
-      zipCode: '12345',
-      phone: '+49 123 456789',
-      email: 'info@ihrefirma.de',
-      website: 'www.ihrefirma.de'
-    }
+      const userId = profiles.user?.id
 
-    const addHeader = () => {
+      if (!userId) {
+        throw new Error('Benutzer nicht gefunden')
+      }
+
+      // Lade die Firmendaten aus der Datenbank
+      const { data: companyData, error: companyDataError } = await supabase
+        .from('firma_daten')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+
+      if (companyDataError) throw companyDataError
+
+      if (!companyData) {
+        throw new Error('Keine Firmendaten gefunden')
+      }
+
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const monthDate = new Date(parseInt(selectedMonth.split('-')[0]), parseInt(selectedMonth.split('-')[1]) - 1, 1);
+      const monthName = monthDate.toLocaleString('de-DE', { month: 'long', year: 'numeric' });
+      const invoiceNumber = `INV-${selectedMonth}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`
+      const currentDate = new Date().toLocaleDateString('de-DE')
+
+      const addHeader = () => {
+        doc.setFillColor(248, 248, 248)
+        doc.rect(0, 0, doc.internal.pageSize.width, 40, 'F')
+        
+        // Firmenname
+        doc.setTextColor(60, 60, 60)
+        doc.setFontSize(22)
+        doc.setFont('helvetica', 'bold')
+        doc.text(companyData.name, 14, 25)
+        
+        // Firmendetails
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'normal')
+        const address = `${companyData.strasse}, ${companyData.plz} ${companyData.stadt}`
+        doc.text(address, doc.internal.pageSize.width - 14, 15, { align: 'right' })
+        doc.text(`Tel: ${companyData.telefon}`, doc.internal.pageSize.width - 14, 20, { align: 'right' })
+        doc.text(`E-Mail: ${companyData.email}`, doc.internal.pageSize.width - 14, 25, { align: 'right' })
+        if (companyData.webseite) {
+          doc.text(companyData.webseite, doc.internal.pageSize.width - 14, 30, { align: 'right' })
+        }
+      }
+
+      const addInvoiceDetails = () => {
+        doc.setFontSize(18)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(60, 60, 60)
+        doc.text('Monatliche Abrechnung', 14, 55)
+        
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'normal')
+        doc.text(`Abrechnungszeitraum: ${monthName}`, 14, 65)
+        doc.text(`Rechnungsnummer: ${invoiceNumber}`, 14, 70)
+        doc.text(`Rechnungsdatum: ${currentDate}`, 14, 75)
+      }
+
+      const addFooter = () => {
+        const pageCount = doc.internal.pages.length
+        doc.setFontSize(8)
+        doc.setTextColor(100)
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i)
+          doc.text(`Seite ${i} von ${pageCount}`, 14, doc.internal.pageSize.height - 10)
+          doc.text(`${companyData.name} • ${companyData.strasse} • ${companyData.plz} ${companyData.stadt}`, 
+            doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' })
+        }
+      }
+
+      // PDF-Erstellung
+      addHeader()
+      addInvoiceDetails()
+
+      const tableColumn = ["Projektname", "Anrufe", "Abrechenbare Anrufe", "Gesamtdauer", "Betrag"]
+      const tableRows = sortedMonthData.map(entry => [
+        entry.projectName,
+        entry.calls.toString(),
+        entry.billableCalls.toString(),
+        formatDuration(entry.duration),
+        formatCurrency(entry.amount)
+      ])
+
+      doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 85,
+        styles: { fontSize: 9, cellPadding: 1.5 },
+        headStyles: { fillColor: [245, 245, 245], textColor: 60, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [252, 252, 252] },
+        showFoot: false 
+      })
+
+      // Zusammenfassung
+      const finalY = ((doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY) || 85
       doc.setFillColor(248, 248, 248)
-      doc.rect(0, 0, doc.internal.pageSize.width, 40, 'F')
-      
-      // Company name
+      doc.rect(14, finalY + 10, doc.internal.pageSize.width - 28, 20, 'F')
       doc.setTextColor(60, 60, 60)
-      doc.setFontSize(22)
-      doc.setFont('helvetica', 'bold')
-      doc.text(companyData.name, 14, 25)
-      
-      // Company details
       doc.setFontSize(10)
       doc.setFont('helvetica', 'normal')
-      const address = `${companyData.street}, ${companyData.zipCode} ${companyData.city}`
-      doc.text(address, doc.internal.pageSize.width - 14, 15, { align: 'right' })
-      doc.text(`Tel: ${companyData.phone}`, doc.internal.pageSize.width - 14, 20, { align: 'right' })
-      doc.text(`E-Mail: ${companyData.email}`, doc.internal.pageSize.width - 14, 25, { align: 'right' })
-      if (companyData.website) {
-        doc.text(companyData.website, doc.internal.pageSize.width - 14, 30, { align: 'right' })
-      }
-    }
-
-    const addInvoiceDetails = () => {
-      doc.setFontSize(18)
+      doc.text(`Anrufe gesamt: ${totalCalls}`, 20, finalY + 22)
+      doc.text(`Abrechenbar: ${totals.billableCalls}`, 100, finalY + 22)
       doc.setFont('helvetica', 'bold')
-      doc.setTextColor(60, 60, 60)
-      doc.text('Monatliche Abrechnung', 14, 55)
-      
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'normal')
-      doc.text(`Abrechnungszeitraum: ${monthName}`, 14, 65)
-      doc.text(`Rechnungsnummer: ${invoiceNumber}`, 14, 70)
-      doc.text(`Rechnungsdatum: ${currentDate}`, 14, 75)
+      doc.text(`Summe: ${formatCurrency(totalAmount)}`, doc.internal.pageSize.width - 20, finalY + 22, { align: 'right' })
+
+      addFooter()
+
+      doc.save(`Monatliche_Abrechnung_${selectedMonth}.pdf`)
+
+      toast({
+        id: "pdf-export-success",
+        title: "Erfolg",
+        description: "PDF wurde erfolgreich erstellt und heruntergeladen.",
+      })
+    } catch (error) {
+      console.error('Fehler beim Exportieren des PDFs:', error)
+      toast({
+        id: "pdf-export-error",
+        title: "Fehler",
+        description: "PDF konnte nicht erstellt werden. Bitte versuchen Sie es später erneut.",
+        variant: "destructive",
+      })
     }
-
-    const addFooter = () => {
-      const pageCount = doc.internal.pages.length
-      doc.setFontSize(8)
-      doc.setTextColor(100)
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i)
-        doc.text(`Seite ${i} von ${pageCount}`, 14, doc.internal.pageSize.height - 10)
-        doc.text(`${companyData.name} • ${companyData.street} • ${companyData.zipCode} ${companyData.city}`, 
-          doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' })
-      }
-    }
-
-    // PDF-Erstellung
-    addHeader()
-    addInvoiceDetails()
-
-    const tableColumn = ["Projektname", "Anrufe", "Abrechenbare Anrufe", "Gesamtdauer", "Betrag"]
-    const tableRows = sortedMonthData.map(entry => [
-      entry.projectName,
-      entry.calls.toString(),
-      entry.billableCalls.toString(),
-      formatDuration(entry.duration),
-      formatCurrency(entry.amount)
-    ])
-
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 85,
-      styles: { fontSize: 9, cellPadding: 1.5 },
-      headStyles: { fillColor: [245, 245, 245], textColor: 60, fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [252, 252, 252] },
-      showFoot: false 
-    })
-
-    // Zusammenfassung
-    const finalY = ((doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY) || 85
-    doc.setFillColor(248, 248, 248)
-    doc.rect(14, finalY + 10, doc.internal.pageSize.width - 28, 20, 'F')
-    doc.setTextColor(60, 60, 60)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`Anrufe gesamt: ${totalCalls}`, 20, finalY + 22)
-    doc.text(`Abrechenbar: ${totals.billableCalls}`, 100, finalY + 22)
-    doc.setFont('helvetica', 'bold')
-    doc.text(`Summe: ${formatCurrency(totalAmount)}`, doc.internal.pageSize.width - 20, finalY + 22, { align: 'right' })
-
-    addFooter()
-
-    doc.save(`Monatliche_Abrechnung_${selectedMonth}.pdf`)
   }
 
   const availableMonths = Object.keys(monthlyData).sort().reverse().map(month => ({
@@ -382,13 +408,15 @@ export default function MonthlyBilling() {
                 </SelectContent>
               </Select>
 
-              <Button 
-                onClick={exportToPDF}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg"
-              >
-                <FileDown className="mr-2 h-4 w-4" />
-                Als PDF exportieren
-              </Button>
+              <div className="space-x-2">
+                <Button 
+                  onClick={exportToPDF}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg"
+                >
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Als PDF exportieren
+                </Button>
+              </div>
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-gray-200">

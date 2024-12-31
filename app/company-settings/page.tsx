@@ -5,8 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Building, LayoutDashboard } from 'lucide-react'
+import { Building, LayoutDashboard, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { useAuth } from '@/contexts/AuthContext'
+import { getFirmaDaten, updateFirmaDaten } from '@/utils/supabase-client'
+import { useToast } from "@/components/ui/use-toast"
 
 type FirmaDaten = {
   name: string
@@ -29,20 +32,75 @@ export default function FirmaEinstellungen() {
     webseite: ''
   })
   const [gespeicherteDaten, setGespeicherteDaten] = useState<FirmaDaten | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
+  const { toast } = useToast()
 
   useEffect(() => {
-    const gespeicherteDaten = localStorage.getItem('firmaDaten')
-    if (gespeicherteDaten) {
-      const geparsteDaten = JSON.parse(gespeicherteDaten)
-      setFirmaDaten(geparsteDaten)
-      setGespeicherteDaten(geparsteDaten)
+    async function loadFirmaDaten() {
+      if (user) {
+        setIsLoading(true)
+        const data = await getFirmaDaten(user.id)
+        if (data) {
+          setFirmaDaten(data)
+          setGespeicherteDaten(data)
+        } else {
+          setFirmaDaten({
+            name: '',
+            strasse: '',
+            stadt: '',
+            plz: '',
+            telefon: '',
+            email: '',
+            webseite: ''
+          })
+          setGespeicherteDaten(null)
+        }
+        setIsLoading(false)
+      }
     }
-  }, [])
+    loadFirmaDaten()
+  }, [user])
 
-  const handleSpeichern = () => {
-    localStorage.setItem('firmaDaten', JSON.stringify(firmaDaten))
-    setGespeicherteDaten(firmaDaten)
-    alert('Firmendaten wurden gespeichert!')
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleSpeichern = async () => {
+    if (user) {
+      setIsLoading(true)
+      const updatedData = await updateFirmaDaten(user.id, firmaDaten)
+      setIsLoading(false)
+      if (updatedData) {
+        setGespeicherteDaten(updatedData)
+        toast({
+          id: "success-toast",
+          title: "Erfolg",
+          description: "Firmendaten wurden erfolgreich gespeichert.",
+          variant: "default",
+        })
+      } else {
+        toast({
+          id: "error-toast",
+          title: "Fehler",
+          description: "Firmendaten konnten nicht gespeichert werden.",
+          variant: "destructive",
+        })
+      }
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-950 to-indigo-900 flex items-center justify-center">
+        <div className="bg-white/10 p-8 rounded-lg backdrop-blur-sm">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -60,7 +118,7 @@ export default function FirmaEinstellungen() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Card className="w-full max-w-2xl mx-auto bg-white/95 shadow-2xl border-blue-200/50 backdrop-blur-sm">
+        <Card className="w-full max-w-2xl mx-auto bg-white/95 shadow-2xl border-blue-200/50 backdrop-blur-sm mb-8">
           <CardHeader className="border-b border-blue-100/50 bg-gradient-to-r from-blue-50 to-indigo-50">
             <CardTitle className="text-2xl font-bold flex items-center text-blue-900">
               <Building className="mr-2 h-6 w-6 text-blue-600" />
@@ -150,51 +208,55 @@ export default function FirmaEinstellungen() {
             <Button 
               onClick={handleSpeichern} 
               className="w-full bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300"
+              disabled={isLoading}
             >
-              Firmendaten speichern
+              {isLoading ? 'Wird gespeichert...' : 'Firmendaten speichern'}
             </Button>
-
-            {gespeicherteDaten && (
-              <Card className="mt-8 bg-blue-50 border-blue-200">
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold text-blue-900">Gespeicherte Firmendaten</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <dl className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
-                    <div className="sm:col-span-1">
-                      <dt className="text-sm font-medium text-blue-700">Firmenname</dt>
-                      <dd className="mt-1 text-sm text-blue-900">{gespeicherteDaten.name}</dd>
-                    </div>
-                    <div className="sm:col-span-1">
-                      <dt className="text-sm font-medium text-blue-700">Straße</dt>
-                      <dd className="mt-1 text-sm text-blue-900">{gespeicherteDaten.strasse}</dd>
-                    </div>
-                    <div className="sm:col-span-1">
-                      <dt className="text-sm font-medium text-blue-700">PLZ</dt>
-                      <dd className="mt-1 text-sm text-blue-900">{gespeicherteDaten.plz}</dd>
-                    </div>
-                    <div className="sm:col-span-1">
-                      <dt className="text-sm font-medium text-blue-700">Stadt</dt>
-                      <dd className="mt-1 text-sm text-blue-900">{gespeicherteDaten.stadt}</dd>
-                    </div>
-                    <div className="sm:col-span-1">
-                      <dt className="text-sm font-medium text-blue-700">Telefon</dt>
-                      <dd className="mt-1 text-sm text-blue-900">{gespeicherteDaten.telefon}</dd>
-                    </div>
-                    <div className="sm:col-span-1">
-                      <dt className="text-sm font-medium text-blue-700">E-Mail</dt>
-                      <dd className="mt-1 text-sm text-blue-900">{gespeicherteDaten.email}</dd>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <dt className="text-sm font-medium text-blue-700">Webseite</dt>
-                      <dd className="mt-1 text-sm text-blue-900">{gespeicherteDaten.webseite}</dd>
-                    </div>
-                  </dl>
-                </CardContent>
-              </Card>
-            )}
           </CardContent>
         </Card>
+
+        {gespeicherteDaten && (
+          <Card className="w-full max-w-2xl mx-auto bg-white/95 shadow-2xl border-blue-200/50 backdrop-blur-sm mt-8">
+            <CardHeader className="border-b border-blue-100/50 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <CardTitle className="text-2xl font-bold flex items-center text-blue-900">
+                <Building className="mr-2 h-6 w-6 text-blue-600" />
+                Gespeicherte Firmendaten
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-6">
+                <div>
+                  <Label className="text-blue-900 font-semibold">Name:</Label>
+                  <p className="text-blue-800 mt-1">{gespeicherteDaten.name || 'Nicht angegeben'}</p>
+                </div>
+                <div>
+                  <Label className="text-blue-900 font-semibold">Strasse:</Label>
+                  <p className="text-blue-800 mt-1">{gespeicherteDaten.strasse || 'Nicht angegeben'}</p>
+                </div>
+                <div>
+                  <Label className="text-blue-900 font-semibold">Stadt:</Label>
+                  <p className="text-blue-800 mt-1">{gespeicherteDaten.stadt || 'Nicht angegeben'}</p>
+                </div>
+                <div>
+                  <Label className="text-blue-900 font-semibold">PLZ:</Label>
+                  <p className="text-blue-800 mt-1">{gespeicherteDaten.plz || 'Nicht angegeben'}</p>
+                </div>
+                <div>
+                  <Label className="text-blue-900 font-semibold">Telefon:</Label>
+                  <p className="text-blue-800 mt-1">{gespeicherteDaten.telefon || 'Nicht angegeben'}</p>
+                </div>
+                <div>
+                  <Label className="text-blue-900 font-semibold">Email:</Label>
+                  <p className="text-blue-800 mt-1">{gespeicherteDaten.email || 'Nicht angegeben'}</p>
+                </div>
+                <div>
+                  <Label className="text-blue-900 font-semibold">Webseite:</Label>
+                  <p className="text-blue-800 mt-1">{gespeicherteDaten.webseite || 'Nicht angegeben'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   )

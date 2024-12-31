@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { PhoneIncoming, PhoneOutgoing, PhoneMissed, Search, Trash2, PhoneOff, Calendar, LayoutDashboard, Check, X, Eye, EyeOff } from 'lucide-react'
+import { PhoneIncoming, PhoneOutgoing, PhoneMissed, Search, Trash2, PhoneOff, Calendar, LayoutDashboard, Check, X, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from '@/contexts/AuthContext'
@@ -55,8 +55,10 @@ const CallList = () => {
   const { toast } = useToast()
   const { user } = useAuth()
   const [visibleNumbers, setVisibleNumbers] = useState<{ [key: number]: boolean }>({})
+  const [isLoading, setIsLoading] = useState(true)
 
   const fetchCalls = useCallback(async () => {
+    setIsLoading(true)
     try {
       if (!user) {
         setCalls([])
@@ -78,6 +80,8 @@ const CallList = () => {
         description: "Anrufe konnten nicht geladen werden.",
         variant: "destructive",
       } as ToastProps)
+    } finally {
+      setIsLoading(false)
     }
   }, [user, toast])
 
@@ -256,8 +260,10 @@ const CallList = () => {
 
   const formatPhoneNumber = (number: string, isVisible: boolean) => {
     if (isVisible) return number
+    const length = number.length
+    if (length <= 4) return number // Gibt die Originalnummer zurück, wenn sie 4 oder weniger Ziffern hat
     const lastFour = number.slice(-4)
-    return '*'.repeat(number.length - 4) + lastFour
+    return '*'.repeat(Math.max(0, length - 4)) + lastFour
   }
 
   return (
@@ -376,7 +382,16 @@ const CallList = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCalls.length === 0 ? (
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        <div className="flex flex-col items-center gap-2 text-blue-600">
+                          <Loader2 className="h-8 w-8 animate-spin" />
+                          <p>Anrufe werden geladen...</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredCalls.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8">
                         <div className="flex flex-col items-center gap-2 text-blue-600">

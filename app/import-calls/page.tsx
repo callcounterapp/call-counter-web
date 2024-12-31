@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Upload } from 'lucide-react'
+import { Upload, LayoutDashboard } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@supabase/supabase-js'
@@ -37,7 +37,8 @@ export default function ImportCallsPage() {
   const [file, setFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState('')
   const [importStatus, setImportStatus] = useState<string>('')
-  
+  const [isImporting, setIsImporting] = useState(false)
+  const [progress, setProgress] = useState(0)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -78,6 +79,10 @@ export default function ImportCallsPage() {
       return
     }
 
+    setIsImporting(true)
+    setProgress(0)
+    setImportStatus('Import wird gestartet...')
+
     const reader = new FileReader()
     reader.onload = async (e) => {
       const content = e.target?.result as string
@@ -109,6 +114,7 @@ export default function ImportCallsPage() {
       }
 
       try {
+        let processedCalls = 0
         for (const call of calls) {
           const { data: existingCalls, error: checkError } = await supabase
             .from('calls')
@@ -134,6 +140,13 @@ export default function ImportCallsPage() {
               newCallsCount++
             }
           }
+          
+          processedCalls++
+          const newProgress = Math.round((processedCalls / calls.length) * 100)
+          if (newProgress > progress) {
+            setProgress(newProgress)
+            setImportStatus(`Import läuft... ${newProgress}% abgeschlossen`)
+          }
         }
 
         if (newCallsCount === 0) {
@@ -141,69 +154,85 @@ export default function ImportCallsPage() {
         } else {
           setImportStatus(`Import abgeschlossen. ${newCallsCount} neue Anrufe wurden importiert. ${calls.length - newCallsCount} Anrufe waren bereits in der Datenbank vorhanden.`)
         }
+        setIsImporting(false)
       } catch (error) {
         console.error('Fehler beim Importieren der Anrufe:', error)
         setImportStatus('Fehler beim Importieren der Anrufe.')
+        setIsImporting(false)
       }
     }
     reader.readAsText(file)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-950 to-indigo-900 flex flex-col items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-white/95 shadow-2xl border-blue-200/50 backdrop-blur-sm">
-        <CardHeader className="space-y-1 border-b border-blue-100/50 bg-gradient-to-r from-blue-50 to-indigo-50">
-          <div className="flex items-center justify-between mb-2">
-            <Link 
-              href="/dashboard" 
-              className="text-blue-600 hover:text-blue-800 transition-colors duration-200 flex items-center gap-2"
-            >
-              <ArrowLeft size={16} />
-              <span className="text-xs font-medium">Zurück</span>
-            </Link>
-          </div>
-          <CardTitle className="text-2xl font-bold text-center text-blue-900">Anrufe importieren</CardTitle>
-          <CardDescription className="text-center text-blue-600 text-sm">
-            Laden Sie Ihre CSV-Datei mit Anrufdaten hoch
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <form onSubmit={(e) => {e.preventDefault(); handleImport()}} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="file-upload" className="sr-only">CSV-Datei auswählen</Label>
-              <div className="flex items-center justify-center w-full">
-                <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-200 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors duration-200">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="w-8 h-8 mb-3 text-blue-500" />
-                    <p className="mb-2 text-sm text-blue-700"><span className="font-semibold">Klicken</span> oder Datei hierher ziehen</p>
-                    <p className="text-xs text-blue-600">{fileName || 'CSV-Datei auswählen'}</p>
-                  </div>
-                  <Input
-                    id="file-upload"
-                    type="file"
-                    accept=".csv"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-            </div>
-            <Button 
-              type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-200 flex items-center justify-center"
-              disabled={!file}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Importieren
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 to-indigo-900">
+      <header className="bg-blue-900/30 backdrop-blur-md shadow-lg border-b border-blue-800/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-white tracking-tight">Anrufe importieren</h1>
+          <Link href="/dashboard">
+            <Button variant="outline" className="bg-blue-100/10 text-blue-100 hover:bg-blue-100/20 border-blue-300/30 backdrop-blur-sm transition-all duration-300">
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              Dashboard
             </Button>
-          </form>
-          {importStatus && (
-            <div className="mt-4 p-3 rounded-lg bg-blue-100 border border-blue-300">
-              <p className="text-xs text-blue-800 text-center">{importStatus}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </Link>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col items-center justify-center">
+        <Card className="w-full max-w-md bg-white/95 shadow-2xl border-blue-200/50 backdrop-blur-sm">
+          <CardHeader className="space-y-1 border-b border-blue-100/50 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <CardTitle className="text-2xl font-bold text-center text-blue-900">Anrufe importieren</CardTitle>
+            <CardDescription className="text-center text-blue-600 text-sm">
+              Laden Sie Ihre CSV-Datei mit Anrufdaten hoch
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <form onSubmit={(e) => {e.preventDefault(); handleImport()}} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="file-upload" className="sr-only">CSV-Datei auswählen</Label>
+                <div className="flex items-center justify-center w-full">
+                  <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-200 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors duration-200">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Upload className="w-8 h-8 mb-3 text-blue-500" />
+                      <p className="mb-2 text-sm text-blue-700"><span className="font-semibold">Klicken</span> oder Datei hierher ziehen</p>
+                      <p className="text-xs text-blue-600">{fileName || 'CSV-Datei auswählen'}</p>
+                    </div>
+                    <Input
+                      id="file-upload"
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-200 flex items-center justify-center"
+                disabled={!file || isImporting}
+              >
+                {isImporting ? (
+                  <>
+                    <span className="mr-2">Importiere...</span>
+                    <span>{progress}%</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Importieren
+                  </>
+                )}
+              </Button>
+            </form>
+            {importStatus && (
+              <div className="mt-4 p-3 rounded-lg bg-blue-100 border border-blue-300">
+                <p className="text-xs text-blue-800 text-center">{importStatus}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </main>
     </div>
   )
 }

@@ -96,7 +96,7 @@ export default function Home() {
         </div>
 
         <footer className="mt-16 text-center text-blue-300 text-sm fade-in opacity-0 transition-opacity duration-800 ease-out" style={{ transitionDelay: '4000ms' }}>
-          © {new Date().getFullYear()} Call Counter. Alle Rechte vorbehalten.
+          © {new Date().getFullYear()} Jimmy Wilhelmer. Alle Rechte vorbehalten.
         </footer>
       </div>
     </div>
