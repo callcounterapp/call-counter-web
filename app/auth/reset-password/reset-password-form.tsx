@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { Button } from "@/components/ui/button"
@@ -8,22 +8,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-function ResetPasswordForm() {
+type AuthError = {
+  message: string;
+}
+
+export default function ResetPasswordForm() {
   const [newPassword, setNewPassword] = useState('')
   const [message, setMessage] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
-
-  useEffect(() => {
-    const token = searchParams.get('token')
-    if (!token) {
-      setMessage('Kein gültiger Token gefunden. Bitte fordern Sie einen neuen Passwort-Reset-Link an.')
-    }
-  }, [searchParams])
+  const token = searchParams.get('token')
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
-    const token = searchParams.get('token')
+    
     if (!token) {
       setMessage('Kein gültiger Token gefunden. Bitte fordern Sie einen neuen Passwort-Reset-Link an.')
       return
@@ -31,15 +29,27 @@ function ResetPasswordForm() {
 
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
-    const { data, error } = await supabase.auth.updateUser({
-      password: newPassword
-    })
+    try {
+      // First verify the token
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: token,
+        type: 'recovery'
+      })
 
-    if (error) {
-      setMessage('Fehler beim Zurücksetzen des Passworts: ' + error.message)
-    } else if (data) {
+      if (verifyError) throw verifyError
+
+      // Then update the password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      })
+
+      if (updateError) throw updateError
+
       setMessage('Passwort wurde erfolgreich zurückgesetzt.')
       setTimeout(() => router.push('/auth/login'), 2000)
+    } catch (error) {
+      const authError = error as AuthError;
+      setMessage('Fehler beim Zurücksetzen des Passworts: ' + authError.message)
     }
   }
 
@@ -82,14 +92,6 @@ function ResetPasswordForm() {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
-export default function ResetPasswordFormWrapper() {
-  return (
-    <Suspense fallback={<div>Laden...</div>}>
-      <ResetPasswordForm />
-    </Suspense>
   )
 }
 
