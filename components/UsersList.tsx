@@ -80,7 +80,7 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
     try {
       if (currentStatus === 'pending') {
         // E-Mail-Verifizierung direkt hier implementiert
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('profiles')
           .update({ 
             status: 'active',
