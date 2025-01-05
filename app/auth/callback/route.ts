@@ -6,12 +6,15 @@ export async function GET(request: NextRequest) {
   const token = requestUrl.searchParams.get('token')
   const next = requestUrl.searchParams.get('next') || '/'
 
+  // Immer zu call-counter.de umleiten
+  const baseUrl = 'https://call-counter.de'
+
   if (token && next.includes('reset-password')) {
-    // Redirect to the password reset page with the token
-    return NextResponse.redirect(new URL(`/auth/reset-password?token=${token}`, requestUrl.origin))
+    // Umleitung zur Passwort-Zurücksetz-Seite mit dem Token
+    return NextResponse.redirect(`${baseUrl}/auth/reset-password?token=${token}`)
   }
 
-  // Handle other auth callbacks
-  return NextResponse.redirect(new URL(next, requestUrl.origin))
+  // Andere Auth-Callbacks behandeln
+  return NextResponse.redirect(`${baseUrl}${next}`)
 }
 

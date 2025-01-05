@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { Button } from "@/components/ui/button"
@@ -17,7 +17,14 @@ export default function ResetPasswordForm() {
   const [message, setMessage] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
-  const token = searchParams.get('token')
+  const [token, setToken] = useState<string | null>(null)
+
+  useEffect(() => {
+    const urlToken = searchParams.get('token')
+    if (urlToken) {
+      setToken(urlToken)
+    }
+  }, [searchParams])
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,7 +37,7 @@ export default function ResetPasswordForm() {
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
     try {
-      // First verify the token
+      // Zuerst den Token verifizieren
       const { error: verifyError } = await supabase.auth.verifyOtp({
         token_hash: token,
         type: 'recovery'
@@ -38,7 +45,7 @@ export default function ResetPasswordForm() {
 
       if (verifyError) throw verifyError
 
-      // Then update the password
+      // Dann das Passwort aktualisieren
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       })
@@ -48,7 +55,7 @@ export default function ResetPasswordForm() {
       setMessage('Passwort wurde erfolgreich zurückgesetzt.')
       setTimeout(() => router.push('/auth/login'), 2000)
     } catch (error) {
-      const authError = error as AuthError;
+      const authError = error as AuthError
       setMessage('Fehler beim Zurücksetzen des Passworts: ' + authError.message)
     }
   }
