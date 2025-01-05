@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Loader2, User, Briefcase, Calendar, Shield, PhoneCall, AlertCircle, Search } from 'lucide-react'
 import { useToast } from "@/components/ui/use-toast"
-import { verifyUserEmail } from '@/app/actions/verify-email'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -80,17 +79,19 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
   const handleStatusChange = async (userId: string, currentStatus: string) => {
     try {
       if (currentStatus === 'pending') {
-        const { success, error } = await verifyUserEmail(userId)
-        if (!success) {
-          console.error('Fehler beim Verifizieren der E-Mail:', error)
-          toast({
-            id: "email-verification-error",
-            title: "Fehler",
-            description: `E-Mail konnte nicht verifiziert werden. Fehler: ${error}`,
-            variant: "destructive",
+        // E-Mail-Verifizierung direkt hier implementiert
+        const { data, error } = await supabase
+          .from('profiles')
+          .update({ 
+            status: 'active',
+            updated_at: new Date().toISOString()
           })
-          return
+          .eq('id', userId)
+
+        if (error) {
+          throw error
         }
+
         toast({
           id: "email-verification-success",
           title: "Erfolg",
