@@ -1,23 +1,48 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
+import { useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 export default function ResetPasswordPage() {
-  const [newPassword, setNewPassword] = useState('')
+  const searchParams = useSearchParams()
+  const supabase = createClientComponentClient()
+  const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const router = useRouter()
 
+  // Verarbeite den Token beim Laden der Seite
+  useEffect(() => {
+    const handlePasswordReset = async () => {
+      const access_token = searchParams.get('access_token')
+      const refresh_token = searchParams.get('refresh_token')
+      
+      if (access_token && refresh_token) {
+        const { data, error } = await supabase.auth.setSession({
+          access_token,
+          refresh_token
+        })
+        
+        if (error) {
+          setMessage('Fehler bei der Authentifizierung. Bitte versuchen Sie es erneut.')
+          router.push('/auth/login')
+        }
+      }
+    }
+
+    handlePasswordReset()
+  }, [searchParams])
+
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
-
-    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    
+    const { error } = await supabase.auth.updateUser({ 
+      password: password 
+    })
 
     if (error) {
       setMessage('Fehler beim Zurücksetzen des Passworts: ' + error.message)
@@ -31,7 +56,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex flex-col items-center justify-center p-4">
       <Card className="w-full max-w-md bg-gray-800/95 backdrop-blur-lg border-gray-700">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center text-white">Passwort zurücksetzen</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center text-white">Neues Passwort festlegen</CardTitle>
         </CardHeader>
         <CardContent>
           {message && (
@@ -45,13 +70,13 @@ export default function ResetPasswordPage() {
           )}
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="newPassword" className="text-gray-200">Neues Passwort</Label>
+              <Label htmlFor="password" className="text-gray-200">Neues Passwort</Label>
               <Input
-                id="newPassword"
+                id="password"
                 type="password"
                 placeholder="Neues Passwort eingeben"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 className="bg-gray-700/90 border-gray-600 text-white placeholder:text-gray-400"
               />
@@ -60,7 +85,7 @@ export default function ResetPasswordPage() {
               type="submit" 
               className="w-full bg-blue-600 hover:bg-blue-700"
             >
-              Passwort zurücksetzen
+              Passwort ändern
             </Button>
           </form>
         </CardContent>
