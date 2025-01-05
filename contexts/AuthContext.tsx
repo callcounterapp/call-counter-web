@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserProfile = useCallback(async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('role, full_name, company_name, status')
+      .select('role, full_name, company_name, status, gesperrt')
       .eq('id', userId)
 
     if (error) {
@@ -122,6 +122,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const profile = await fetchUserProfile(data.user.id)
       if (profile && profile.status === 'pending') {
         return { user: null, error: 'Ihr Konto wurde noch nicht freigeschaltet. Bitte warten Sie auf die Bestätigung durch einen Administrator.' }
+      }
+      if (profile && profile.gesperrt === 'ja') {
+        return { user: null, error: 'Ihr Konto wurde gesperrt. Bitte wenden Sie sich an office@call-counter.de für weitere Informationen.' }
       }
       const extendedUser = { ...data.user, ...profile }
       setUser(extendedUser)

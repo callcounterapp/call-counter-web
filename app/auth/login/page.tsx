@@ -28,8 +28,12 @@ export default function LoginPage() {
       const { user, error } = await login(email, password);
       
       if (user) {
-        console.log('Benutzer erfolgreich angemeldet:', user);
-        router.push('/dashboard');
+        if (user.user_metadata.gesperrt === 'ja') {
+          setMessage('Ihr Konto wurde gesperrt. Bitte wenden Sie sich an office@call-counter.de für weitere Informationen.');
+        } else {
+          console.log('Benutzer erfolgreich angemeldet:', user);
+          router.push('/dashboard');
+        }
       } else if (error) {
         setMessage(error);
       }
