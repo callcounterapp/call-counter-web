@@ -24,6 +24,20 @@ export default function ResetPasswordForm() {
     if (urlToken) {
       setToken(urlToken)
     }
+
+    // Apply global styles
+    document.body.style.background = 'linear-gradient(to bottom right, #172554, #312e81)'
+    document.body.style.margin = '0'
+    document.body.style.padding = '0'
+    document.body.style.minHeight = '100vh'
+
+    // Cleanup function
+    return () => {
+      document.body.style.background = ''
+      document.body.style.margin = ''
+      document.body.style.padding = ''
+      document.body.style.minHeight = ''
+    }
   }, [searchParams])
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -61,7 +75,7 @@ export default function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-950 to-indigo-900 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <Card className="w-full max-w-md bg-white/10 backdrop-blur-md border border-blue-300/20">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center text-blue-100">Passwort zurücksetzen</CardTitle>
