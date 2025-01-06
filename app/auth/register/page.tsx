@@ -37,7 +37,7 @@ export default function RegisterPage() {
       if (error) {
         setError(message)
       } else {
-        setSuccess('Registrierung erfolgreich. Ein Administrator wird Ihr Konto in Kürze freischalten. Sie erhalten eine Bestätigungs-E-Mail.')
+        setSuccess('Registrierung erfolgreich. Bitte bestätigen Sie Ihre E-Mail-Adresse, indem Sie auf den Bestätigungslink in der E-Mail klicken, die wir Ihnen gesendet haben')
         setTimeout(() => {
           router.push('/auth/login')
         }, 2000)

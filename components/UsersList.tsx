@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Loader2, User, Users, Calendar, Shield, PhoneCall, AlertCircle, Search, Trash2 } from 'lucide-react'
+import { Loader2, User, Users, Calendar, Shield, PhoneCall, AlertCircle, Search, Trash2, Mail, RefreshCw } from 'lucide-react'
 import { useToast } from "@/components/ui/use-toast"
 import {
   AlertDialog,
@@ -19,11 +19,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
+
 
 interface Profile {
   id: string
@@ -35,6 +35,7 @@ interface Profile {
   role: string
   call_count: number
   gesperrt: boolean | null
+  email_confirmed: boolean
 }
 
 export default function UsersList({ isLoading: initialLoading }: { isLoading: boolean }) {
@@ -43,6 +44,7 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
   const [isLoading, setIsLoading] = useState(initialLoading)
   const [searchTerm, setSearchTerm] = useState('')
   const { toast } = useToast()
+  const [lastEmailSentTime, setLastEmailSentTime] = useState<{ [key: string]: number }>({});
 
   const loadUsers = useCallback(async () => {
     setIsLoading(true)
@@ -62,10 +64,32 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
 
         if (countError) {
           console.error(`Fehler beim Laden der Anrufzahl für Benutzer ${profile.id}:`, countError)
-          return { ...profile, call_count: 0, gesperrt: profile.gesperrt }
+          return { ...profile, call_count: 0 }
         }
 
-        return { ...profile, call_count: count || 0, gesperrt: profile.gesperrt }
+        // Fetch email confirmation status
+        let emailConfirmed = false;
+        try {
+          const { data: emailStatus, error: emailStatusError } = await supabase
+            .from('email_confirmation_status')
+            .select('is_confirmed')
+            .eq('user_id', profile.id)
+            .single()
+
+          if (emailStatusError) {
+            console.error(`Fehler beim Laden des E-Mail-Status für Benutzer ${profile.id}:`, emailStatusError)
+          } else {
+            emailConfirmed = emailStatus?.is_confirmed || false
+          }
+        } catch (error) {
+          console.error(`Unerwarteter Fehler beim Laden des E-Mail-Status für Benutzer ${profile.id}:`, error)
+        }
+
+        return { 
+          ...profile, 
+          call_count: count || 0,
+          email_confirmed: emailConfirmed
+        }
       }))
 
       setUsers(usersWithCallCount)
@@ -91,7 +115,6 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
   const handleStatusChange = async (userId: string, currentStatus: string) => {
     try {
       if (currentStatus === 'pending') {
-        // E-Mail-Adresse des Benutzers abrufen
         const { data: userData, error: userError } = await supabase
           .from('profiles')
           .select('email')
@@ -100,33 +123,90 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
 
         if (userError) throw userError
 
-        // Magic Link für die Aktivierung senden
-        const { error: magicLinkError } = await supabase.auth.signInWithOtp({
-          email: userData.email,
-          options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
-          },
-        })
+        const { data: emailStatus, error: emailStatusError } = await supabase
+          .from('email_confirmation_status')
+          .select('is_confirmed')
+          .eq('user_id', userId)
+          .single()
 
-        if (magicLinkError) throw magicLinkError
+        if (emailStatusError) {
+          console.error(`Fehler beim Laden des E-Mail-Status für Benutzer ${userId}:`, emailStatusError)
+          throw new Error('Fehler beim Laden des E-Mail-Status')
+        }
 
-        // Status aktualisieren
-        const { error } = await supabase
-          .from('profiles')
-          .update({ 
-            status: 'active',
-            updated_at: new Date().toISOString()
+        if (!emailStatus.is_confirmed) {
+          const currentTime = Date.now();
+          const lastSentTime = lastEmailSentTime[userId] || 0;
+          const timeSinceLastEmail = currentTime - lastSentTime;
+          const cooldownPeriod = 30000; // 30 seconds cooldown
+
+          if (timeSinceLastEmail < cooldownPeriod) {
+            const remainingTime = Math.ceil((cooldownPeriod - timeSinceLastEmail) / 1000);
+            toast({
+              id: "email-cooldown",
+              title: "Bitte warten",
+              description: `Aus Sicherheitsgründen können Sie erst in ${remainingTime} Sekunden eine neue Bestätigungsmail anfordern.`,
+            });
+            return;
+          }
+
+          try {
+            const { error: confirmError } = await supabase.auth.resend({
+              type: 'signup',
+              email: userData.email,
+              options: {
+                emailRedirectTo: `${window.location.origin}/auth/callback`
+              }
+            });
+
+            if (confirmError) throw confirmError;
+
+            setLastEmailSentTime(prev => ({ ...prev, [userId]: currentTime }));
+
+            toast({
+              id: "email-confirmation-resent",
+              title: "E-Mail gesendet",
+              description: "Eine neue Bestätigungsmail wurde an den Benutzer gesendet.",
+            });
+          } catch (error) {
+            console.error('Error resending confirmation email:', error);
+            toast({
+              id: "email-resend-error",
+              title: "Fehler",
+              description: "Es gab ein Problem beim Senden der Bestätigungsmail. Bitte versuchen Sie es später erneut.",
+              variant: "destructive",
+            });
+          }
+        } else {
+          // E-Mail ist bestätigt, fahren Sie mit der Aktivierung fort
+          const { error: magicLinkError } = await supabase.auth.signInWithOtp({
+            email: userData.email,
+            options: {
+              emailRedirectTo: `${window.location.origin}/auth/callback`,
+              data: { action: 'activate' }
+            }
           })
-          .eq('id', userId)
 
-        if (error) throw error
+          if (magicLinkError) throw magicLinkError
 
-        toast({
-          id: "email-verification-success",
-          title: "Erfolg",
-          description: "Benutzerstatus geändert und Magic Link gesendet.",
-        })
+          const { error } = await supabase
+            .from('profiles')
+            .update({ 
+              status: 'active',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', userId)
+
+          if (error) throw error
+
+          toast({
+            id: "email-verification-success",
+            title: "Erfolg",
+            description: "Benutzerstatus geändert und Magic Link gesendet.",
+          })
+        }
       } else {
+        // Benutzer deaktivieren
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ 
@@ -282,7 +362,13 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
       <main className="p-6">
         <Card className="bg-white shadow-2xl border-blue-200/50">
           <CardHeader className="border-b border-blue-100/50 bg-gradient-to-r from-blue-50 to-indigo-50">
-            <CardTitle className="text-2xl font-bold text-blue-900 flex items-center">Benutzer verwalten</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-2xl font-bold text-blue-900 flex items-center">Benutzer verwalten</CardTitle>
+              <Button onClick={loadUsers} variant="outline" size="sm" className="ml-2">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Aktualisieren
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="p-6">
             <div className="mb-6">
@@ -340,6 +426,12 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
                                 : 'bg-yellow-100 text-yellow-800'
                           }`}>
                             {user.gesperrt ? 'Gesperrt' : user.status === 'active' ? 'Aktiv' : 'Ausstehend'}
+                          </span>
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full flex items-center ${
+                            user.email_confirmed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            <Mail className="w-3 h-3 mr-1" />
+                            {user.email_confirmed ? 'Bestätigt' : 'Nicht bestätigt'}
                           </span>
                         </div>
                         <div className="flex flex-col space-y-2 pt-4">
