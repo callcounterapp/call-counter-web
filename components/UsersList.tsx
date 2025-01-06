@@ -5,8 +5,20 @@ import { createClient } from '@supabase/supabase-js'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Loader2, User, Briefcase, Calendar, Shield, PhoneCall, AlertCircle, Search } from 'lucide-react'
+import { Loader2, User, Users, Calendar, Shield, PhoneCall, AlertCircle, Search, Trash2 } from 'lucide-react'
 import { useToast } from "@/components/ui/use-toast"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -79,7 +91,26 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
   const handleStatusChange = async (userId: string, currentStatus: string) => {
     try {
       if (currentStatus === 'pending') {
-        // E-Mail-Verifizierung direkt hier implementiert
+        // E-Mail-Adresse des Benutzers abrufen
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', userId)
+          .single()
+
+        if (userError) throw userError
+
+        // Magic Link für die Aktivierung senden
+        const { error: magicLinkError } = await supabase.auth.signInWithOtp({
+          email: userData.email,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        })
+
+        if (magicLinkError) throw magicLinkError
+
+        // Status aktualisieren
         const { error } = await supabase
           .from('profiles')
           .update({ 
@@ -88,14 +119,12 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
           })
           .eq('id', userId)
 
-        if (error) {
-          throw error
-        }
+        if (error) throw error
 
         toast({
           id: "email-verification-success",
           title: "Erfolg",
-          description: "Benutzerstatus geändert und E-Mail verifiziert.",
+          description: "Benutzerstatus geändert und Magic Link gesendet.",
         })
       } else {
         const { error: updateError } = await supabase
@@ -106,9 +135,8 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
           })
           .eq('id', userId)
 
-        if (updateError) {
-          throw updateError
-        }
+        if (updateError) throw updateError
+
         toast({
           id: "status-change-success",
           title: "Erfolg",
@@ -122,7 +150,7 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
       toast({
         id: "status-change-error",
         title: "Fehler",
-        description: "Statusänderung fehlgeschlagen. Bitte versuchen Sie es später erneut.",
+        description: "Statusänderung oder Senden des Magic Links fehlgeschlagen.",
         variant: "destructive",
       })
     }
@@ -200,6 +228,32 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
     }
   }
 
+  const handleDeleteCalls = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('calls')
+        .delete()
+        .eq('user_id', userId)
+
+      if (error) throw error
+
+      await loadUsers()
+      toast({
+        id: "delete-calls-success",
+        title: "Erfolg",
+        description: "Alle Anrufe des Benutzers wurden gelöscht.",
+      })
+    } catch (error) {
+      console.error('Delete calls error:', error)
+      toast({
+        id: "delete-calls-error",
+        title: "Fehler",
+        description: "Löschen der Anrufe fehlgeschlagen. Bitte versuchen Sie es später erneut.",
+        variant: "destructive",
+      })
+    }
+  }
+
   const filteredUsers = users.filter(user =>
     user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -260,7 +314,7 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
                           </div>
                         </div>
                         <div className="flex items-center space-x-2 text-sm text-blue-700">
-                          <Briefcase className="h-4 w-4" />
+                          <Users className="h-4 w-4" />
                           <span>{user.company_name || '-'}</span>
                         </div>
                         <div className="flex items-center space-x-2 text-sm text-blue-700">
@@ -313,6 +367,35 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
                           >
                             {user.gesperrt ? 'Entsperren' : 'Sperren'}
                           </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full bg-red-100 text-red-800 hover:bg-red-200 border-red-300 transition-colors duration-200"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Anrufe löschen
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="bg-white text-blue-900 border-blue-200">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Alle Anrufe löschen</AlertDialogTitle>
+                                <AlertDialogDescription className="text-blue-600">
+                                  Sind Sie sicher, dass Sie alle Anrufe dieses Benutzers löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel className="bg-blue-50 text-blue-900 hover:bg-blue-100 border-blue-200">Abbrechen</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteCalls(user.id)}
+                                  className="bg-red-600 text-white hover:bg-red-700"
+                                >
+                                  Alle löschen
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
                     </CardContent>

@@ -107,7 +107,7 @@ export default function FirmaEinstellungen() {
     <div className="min-h-screen bg-gradient-to-br from-blue-950 to-indigo-900">
       <header className="bg-blue-900/30 backdrop-blur-md shadow-lg border-b border-blue-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-white tracking-tight">Firmeneinstellungen</h1>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Unternehmenseinstellungen</h1>
           <Link href="/dashboard">
             <Button variant="outline" className="bg-blue-100/10 text-blue-100 hover:bg-blue-100/20 border-blue-300/30 backdrop-blur-sm transition-all duration-300">
               <LayoutDashboard className="mr-2 h-4 w-4" />

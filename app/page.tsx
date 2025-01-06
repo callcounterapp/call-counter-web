@@ -53,7 +53,7 @@ export default function Home() {
           </h1>
           <div className="text-xl text-blue-200 max-w-2xl mx-auto">
             <AnimatedText 
-              text="Revolutionieren Sie Ihre Anrufverwaltung mit unserer fortschrittlichen Plattform für effizientes Tracking und Analyse." 
+              text="Optimieren Sie Ihre Anrufverwaltung mit unserer fortschrittlichen Plattform für präzise Auswertungen." 
               delay={1500}
             />
           </div>
@@ -68,12 +68,12 @@ export default function Home() {
           <FeatureCard
             icon={<BarChart2 className="h-8 w-8 text-blue-400" />}
             title="Leistungsanalyse"
-            description="Gewinnen Sie wertvolle Einblicke in Ihre Anrufstatistiken und Teamleistung."
+            description="Gewinnen Sie wertvolle Einblicke in Ihre Anrufstatistiken."
           />
           <FeatureCard
             icon={<Clock className="h-8 w-8 text-blue-400" />}
             title="Zeitmanagement"
-            description="Optimieren Sie Ihre Anrufzeiten und steigern Sie die Effizienz Ihres Teams."
+            description="Verbessern Sie Ihre Anrufverwaltung und maximieren Sie Ihre Produktivität."
           />
           <FeatureCard
             icon={<Users className="h-8 w-8 text-blue-400" />}
