@@ -45,38 +45,8 @@ export default function ManageProjects() {
   
       if (error) throw error
     
-      if (data && data.length > 0) {
+      if (data) {
         setProjects(data)
-      } else {
-        // Wenn keine Projekte gefunden wurden, laden wir die vordefinierten Projekte
-        const predefinedProjects: Project[] = [
-          {
-            id: '442cfe7c-31f1-4af2-9ce0-5be5dec9d996',
-            internal_name: 'Witt',
-            display_name: 'Witt',
-            payment_model: 'perCall',
-            custom_rates: [{"rate":0,"maxDuration":0,"minDuration":0}],
-            min_duration: 20,
-            per_minute_rate: 0,
-            per_call_rate: -37,
-            round_up_minutes: false,
-            user_id: '64bfd0ed-6a3d-422e-a6ef-5c9acb374218'
-          },
-          {
-            id: '7c787497-3e08-427b-878d-4fdbb767129a',
-            internal_name: 'Vgn',
-            display_name: 'VGN',
-            payment_model: 'perCall',
-            custom_rates: [{"rate":0,"maxDuration":0,"minDuration":0}],
-            min_duration: 20,
-            per_minute_rate: 0,
-            per_call_rate: 70,
-            round_up_minutes: true,
-            user_id: '64bfd0ed-6a3d-422e-a6ef-5c9acb374218'
-          },
-          // Fügen Sie hier die anderen Projekte aus Ihrem SQL-Insert hinzu
-        ]
-        setProjects(predefinedProjects)
       }
     } catch (error) {
       console.error('Fehler beim Laden der Projekte:', error)
@@ -233,7 +203,6 @@ function ProjectSetup({ projects, setProjects }: { projects: Project[], setProje
       return
     }
 
-    // Zeige den benutzerdefinierten Dialog an
     const confirmed = await new Promise<boolean>((resolve) => {
       const dialog = document.createElement('div')
       dialog.innerHTML = `
