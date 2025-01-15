@@ -68,7 +68,6 @@ export function UserProfileCard({ user }: UserProfileCardProps) {
     return new Date().getTime() - new Date(createdAt).getTime() < 24 * 60 * 60 * 1000
   }
 
-  const dummyImageUrl = "/placeholder.svg"
 
   return (
     <Card className="bg-white shadow-xl border-0 overflow-hidden rounded-xl">

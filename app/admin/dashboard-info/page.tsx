@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -14,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -30,6 +29,7 @@ import {
 import { createClient } from '@supabase/supabase-js'
 import { useDropzone } from 'react-dropzone'
 import { Loader2, Upload, AlertCircle, CheckCircle2, ImageIcon, Calendar, Clock, Edit, Trash2 } from 'lucide-react'
+import Image from 'next/image'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -74,10 +74,11 @@ function DashboardInfoList({ data, onEdit, onDelete }: {
                   <Dialog>
                     <DialogTrigger asChild>
                       <div className="relative h-32 w-full cursor-pointer overflow-hidden rounded-md">
-                        <img 
-                          src={info.image_url || "/placeholder.svg"} 
-                          alt={info.title} 
-                          className="w-full h-full object-cover"
+                        <Image 
+                          src={info.image_url || "/placeholder.svg"}
+                          alt={info.title}
+                          layout="fill"
+                          objectFit="cover"
                         />
                         <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
                           <ImageIcon className="w-8 h-8 text-white" />
@@ -89,16 +90,19 @@ function DashboardInfoList({ data, onEdit, onDelete }: {
                         <DialogTitle>{info.title}</DialogTitle>
                         <DialogDescription>Bild in Vollgröße</DialogDescription>
                       </DialogHeader>
-                      <img 
-                        src={info.image_url || "/placeholder.svg"} 
-                        alt={info.title} 
-                        className="w-full h-auto max-h-[80vh] object-contain"
-                      />
+                      <div className="relative w-full h-[60vh]">
+                        <Image 
+                          src={info.image_url || "/placeholder.svg"}
+                          alt={info.title}
+                          layout="fill"
+                          objectFit="contain"
+                        />
+                      </div>
                     </DialogContent>
                   </Dialog>
                 )}
               </CardContent>
-              <CardFooter className="text-xs text-blue-200 flex items-center justify-between">
+              <CardContent className="text-xs text-blue-200 flex items-center justify-between">
                 <span className="flex items-center">
                   <Calendar className="w-4 h-4 mr-1" />
                   {new Date(info.created_at).toLocaleDateString()}
@@ -107,8 +111,8 @@ function DashboardInfoList({ data, onEdit, onDelete }: {
                   <Clock className="w-4 h-4 mr-1" />
                   {new Date(info.created_at).toLocaleTimeString()}
                 </span>
-              </CardFooter>
-              <CardFooter className="pt-2">
+              </CardContent>
+              <CardContent className="pt-2">
                 <Button variant="outline" size="sm" className="mr-2" onClick={() => onEdit(info)}>
                   <Edit className="w-4 h-4 mr-1" />
                   Bearbeiten
@@ -133,7 +137,7 @@ function DashboardInfoList({ data, onEdit, onDelete }: {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-              </CardFooter>
+              </CardContent>
             </Card>
           ))}
         </div>
@@ -208,16 +212,16 @@ export default function DashboardInfo() {
           throw new Error('Keine Daten vom Bildupload erhalten')
         }
 
-        const { data: { publicUrl }, error: urlError } = supabase.storage
+        const { data } = supabase.storage
           .from('dashboard-images')
           .getPublicUrl(fileName)
 
-        if (urlError) {
-          console.error('Fehler beim Abrufen der öffentlichen URL:', urlError)
-          throw new Error(`URL-Abruffehler: ${urlError.message}`)
+        if (!data || !data.publicUrl) {
+          console.error('Fehler beim Abrufen der öffentlichen URL')
+          throw new Error('URL-Abruffehler: Keine öffentliche URL erhalten')
         }
 
-        imageUrl = publicUrl
+        imageUrl = data.publicUrl
       }
 
       if (editingInfo) {
