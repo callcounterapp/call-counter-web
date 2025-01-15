@@ -15,7 +15,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Call Counter",
-  description: "Call Counter",
+  description: "Professionelle Anrufzählung und -verwaltung",
+  icons: {
+    icon: [
+      {
+        url: "/icon.svg",
+        href: "/icon.svg",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -24,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="de">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

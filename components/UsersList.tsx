@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Loader2, User, Users, Calendar, Shield, PhoneCall, AlertCircle, Search, Trash2, Mail, RefreshCw } from 'lucide-react'
 import { useToast } from "@/components/ui/use-toast"
+import { useRouter } from 'next/navigation'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +24,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
-
 
 interface Profile {
   id: string
@@ -45,6 +45,7 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
   const [searchTerm, setSearchTerm] = useState('')
   const { toast } = useToast()
   const [lastEmailSentTime, setLastEmailSentTime] = useState<{ [key: string]: number }>({});
+  const router = useRouter()
 
   const loadUsers = useCallback(async () => {
     setIsLoading(true)
@@ -364,10 +365,15 @@ export default function UsersList({ isLoading: initialLoading }: { isLoading: bo
           <CardHeader className="border-b border-blue-100/50 bg-gradient-to-r from-blue-50 to-indigo-50">
             <div className="flex justify-between items-center">
               <CardTitle className="text-2xl font-bold text-blue-900 flex items-center">Benutzer verwalten</CardTitle>
-              <Button onClick={loadUsers} variant="outline" size="sm" className="ml-2">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Aktualisieren
-              </Button>
+              <div className="flex items-center space-x-2">
+                <Button onClick={loadUsers} variant="outline" size="sm">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Aktualisieren
+                </Button>
+                <Button onClick={() => router.push('/admin/dashboard-info')} variant="outline" size="sm">
+                  Dashboard-Info
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-6">
