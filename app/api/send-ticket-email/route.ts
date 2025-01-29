@@ -11,25 +11,25 @@ const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, proces
 export async function POST(req: Request) {
   try {
     const { email, subject, message, userId } = await req.json()
-    console.log("Received request:", { email, subject, message, userId });
+    console.log("Received request:", { email, subject, message, userId })
 
     if (!email || !subject || !message || !userId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
     console.log("Attempting to send email:", { email, subject, userId })
-    console.log("Attempting to update user and send email");
+    console.log("Attempting to update user and send email")
 
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       email: email,
       email_confirm: true,
-      data: {
+      user_metadata: {
         ticket_subject: subject,
         admin_response: message,
       },
     })
 
-    console.log("Supabase response:", { data, error });
+    console.log("Supabase response:", { data, error })
 
     if (error) {
       console.error("Supabase email error:", error)
@@ -43,3 +43,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "An unexpected error occurred", details: error }, { status: 500 })
   }
 }
+

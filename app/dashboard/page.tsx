@@ -20,6 +20,16 @@ import {
   MessageCircle,
 } from "lucide-react"
 import { UserProfileCard } from "@/components/UserProfileCard"
+import type React from "react" // Added import for React
+
+// Definieren Sie einen Typ für die Menüelemente
+type MenuItem = {
+  title: string
+  icon: React.ElementType
+  href: string
+  description: string
+  notification?: boolean
+}
 
 export default function DashboardPage() {
   const { user, logout } = useAuth()
@@ -85,7 +95,7 @@ export default function DashboardPage() {
     )
   }
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     {
       title: "Anrufe importieren",
       icon: PhoneIncoming,
