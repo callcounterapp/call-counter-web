@@ -150,49 +150,12 @@ export default function AdminSupportTickets() {
       if (error) throw error
 
       if (newStatus === "geschlossen") {
-        const ticket = tickets.find((t) => t.id === ticketId)
-        if (ticket && ticket.user_email) {
-          try {
-            console.log("Sending email for ticket:", {
-              ticketId,
-              email: ticket.user_email,
-              subject: ticket.subject,
-              userId: ticket.user_id,
-            })
-            const response = await fetch("/api/send-ticket-email", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                email: ticket.user_email,
-                subject: ticket.subject,
-                message: adminResponse || "Ihr Ticket wurde geschlossen.",
-                userId: ticket.user_id,
-              }),
-            })
-            console.log("Email API response:", response)
-            const responseData = await response.json()
-            console.log("Email API response data:", responseData)
-            if (!response.ok) {
-              console.error("Email sending failed:", responseData.error, responseData.details)
-              throw new Error(responseData.error || "Failed to send email")
-            }
-
-            console.log("Email sent successfully")
-          } catch (error) {
-            console.error("Error sending email:", error, typeof error === "object" ? JSON.stringify(error) : "")
-            setNotification({
-              type: "warning",
-              message: "Ticket geschlossen, aber E-Mail konnte nicht gesendet werden.",
-            })
-          }
-        }
+        // Email notification removed
       }
 
       setNotification({
         type: "success",
-        message: "Ticket erfolgreich aktualisiert.",
+        message: "Ticket erfolgreich aktualisiert. (E-Mail-Benachrichtigung deaktiviert)",
       })
 
       await fetchTickets()
