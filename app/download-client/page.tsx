@@ -65,7 +65,7 @@ export default function DownloadClientPage() {
         />
         <ol className="list-decimal list-inside">
           <li>Melden Sie sich mit Ihren Benutzerdaten auf www.call-counter.de an.</li>
-          <li>Geben Sie im Popup-Fenster den korrekten Pfad ein und klicken Sie auf "Speichern".</li>
+          <li>Geben Sie im Popup-Fenster den korrekten Pfad ein und klicken Sie auf &quot;Speichern&quot;.</li>
         </ol>
       </section>
 
@@ -74,14 +74,14 @@ export default function DownloadClientPage() {
         <Image src="/bild2.png" alt="Pfad anpassen" width={400} height={200} className="mb-2 rounded-lg shadow-md" />
         <ol className="list-decimal list-inside">
           <li>
-            Nachdem Sie sich erfolgreich angemeldet haben, klicken Sie auf "Pfad ändern", um den Pfad zur
+            Nachdem Sie sich erfolgreich angemeldet haben, klicken Sie auf &quot;Pfad ändern&quot;, um den Pfad zur
             InteliaPhone.ini-Datei festzulegen.
           </li>
           <li>
             Für gewöhnlich befindet sich die Datei unter dem folgenden Pfad:
-            "C:\Users\Dein_Benuitzername\AppData\Roaming\InteliaPhone\InteliaPhone.ini
+            &quot;C:\Users\Dein_Benuitzername\AppData\Roaming\InteliaPhone\InteliaPhone.ini&quot;
           </li>
-          <li>Klicken Sie abschließend auf "Importieren", um den Importvorgang zu starten.</li>
+          <li>Klicken Sie abschließend auf &quot;Importieren&quot;, um den Importvorgang zu starten.</li>
         </ol>
       </section>
 
@@ -97,7 +97,7 @@ export default function DownloadClientPage() {
         <ul className="list-disc list-inside">
           <li>
             Geben Sie im Feld den gewünschten Intervall in Minuten ein, z. B. 60, und aktivieren Sie das Kästchen bei
-            "Auto Import starten
+            &quot;Auto Import starten&quot;
           </li>
           <li>Nun wird alle 60 Minuten ein automatischer Importvorgang Ihrer Calls durchgeführt</li>
         </ul>
