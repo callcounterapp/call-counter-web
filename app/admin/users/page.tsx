@@ -7,7 +7,7 @@ import UsersList from "@/components/UsersList"
 import { createClient } from "@supabase/supabase-js"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, MessageCircle, Info } from "lucide-react"
+import { LayoutDashboard, MessageCircle, Info, PhoneCall } from "lucide-react"
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
@@ -73,6 +73,15 @@ export default function AdminUsersPage() {
               >
                 <Info className="mr-2 h-4 w-4" />
                 Dashboard Info
+              </Button>
+            </Link>
+            <Link href="/admin/call-statistics">
+              <Button
+                variant="outline"
+                className="bg-blue-100/10 text-blue-100 hover:bg-blue-100/20 border-blue-300/30 backdrop-blur-sm transition-all duration-300"
+              >
+                <PhoneCall className="mr-2 h-4 w-4" />
+                Call Statistics
               </Button>
             </Link>
             <Link href="/admin/support-tickets">

@@ -18,9 +18,10 @@ import {
   Settings,
   Loader2,
   MessageCircle,
+  Download,
 } from "lucide-react"
 import { UserProfileCard } from "@/components/UserProfileCard"
-import type React from "react" // Added import for React
+import type React from "react"
 
 // Definieren Sie einen Typ für die Menüelemente
 type MenuItem = {
@@ -144,6 +145,12 @@ export default function DashboardPage() {
     href: "/support-tickets",
     description: "Erstellen und verwalten Sie Support-Tickets.",
     notification: hasTicketUpdates,
+  })
+  menuItems.push({
+    title: "Client herunterladen",
+    icon: Download,
+    href: "/download-client",
+    description: "Laden Sie die neueste Version des Call Counter Clients herunter.",
   })
 
   return (

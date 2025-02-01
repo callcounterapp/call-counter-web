@@ -1,16 +1,17 @@
 "use client"
 
-import React, { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { FileDown, Euro, AlertCircle, Loader2, LayoutDashboard } from "lucide-react"
+import { FileDown, Euro, Loader2, LayoutDashboard } from "lucide-react"
 import jsPDF from "jspdf"
 import "jspdf-autotable"
 import { createClient } from "@supabase/supabase-js"
 import { useToast } from "@/components/ui/use-toast"
 import Link from "next/link"
+import { useAuth } from "@/contexts/AuthContext"
 
 declare module "jspdf" {
   interface jsPDF {
@@ -45,286 +46,354 @@ interface Project {
   user_id: string
 }
 
-type MonthlyEntry = {
-  projectId: string | null
-  projectName: string
-  calls: number
-  billableCalls: number
-  duration: number
-  billableDuration: number
-  amount: number
-}
-
-type MonthlyData = {
-  [key: string]: MonthlyEntry[]
-}
-
-const formatMonthYear = (dateString: string) => {
-  const [year, month] = dateString.split("-")
-  const date = new Date(Number.parseInt(year), Number.parseInt(month) - 1, 1)
-  return date.toLocaleString("de-DE", { year: "numeric", month: "long" })
-}
-
-const parseGermanDate = (dateString: string): Date => {
-  const [datePart, timePart] = dateString.split(", ")
-  const [day, month, year] = datePart.split(".").map(Number)
-  const [hours, minutes, seconds] = timePart.split(":").map(Number)
-  return new Date(year, month - 1, day, hours, minutes, seconds)
-}
-
 export default function MonthlyBilling() {
   const [calls, setCalls] = useState<Call[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [monthlyData, setMonthlyData] = useState<MonthlyData>({})
-  const [selectedMonth, setSelectedMonth] = useState<string>("")
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [selectedTime, setSelectedTime] = useState<string>("all")
+  const [monthOptions, setMonthOptions] = useState<string[]>([])
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date())
+  const [hasCompanyData, setHasCompanyData] = useState(false)
+  const { user } = useAuth()
 
   const { toast } = useToast()
 
-  const loadData = useCallback(async () => {
-    try {
-      const { data: profiles, error: profilesError } = await supabase.auth.getUser()
-      if (profilesError) throw profilesError
+  const parseDuration = useCallback((formattedduration: string): number => {
+    if (!formattedduration) return 0
+    const [minutes, seconds] = formattedduration.split(":").map(Number)
+    return minutes * 60 + (seconds || 0)
+  }, [])
 
-      const userId = profiles.user?.id
-
-      if (!userId) {
-        throw new Error("Benutzer nicht gefunden")
-      }
-
-      const [projectsData, callsData] = await Promise.all([
-        supabase.from("projects").select("*").eq("user_id", userId),
-        supabase.from("calls").select("*").eq("user_id", userId),
-      ])
-
-      if (projectsData.error) throw projectsData.error
-      if (callsData.error) throw callsData.error
-
-      const processedCalls = (callsData.data || []).map((call) => ({
-        ...call,
-        Duration: parseDuration(call.formattedduration),
-      }))
-
-      const processedProjects = (projectsData.data || []).map((project) => ({
-        ...project,
-        custom_rates:
-          typeof project.custom_rates === "string" ? JSON.parse(project.custom_rates) : project.custom_rates,
-      }))
-
-      setCalls(processedCalls)
-      setProjects(processedProjects)
-      setError(null)
-    } catch (error) {
-      console.error("Fehler beim Laden der Daten:", error)
-      setError("Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.")
-      toast({
-        id: "load-data-error",
-        title: "Fehler",
-        description: "Daten konnten nicht geladen werden.",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-      setIsInitialLoad(false)
-    }
-  }, [toast])
+  const parseDate = useCallback((dateString: string): Date => {
+    const [datePart, timePart] = dateString.split(", ")
+    const [day, month, year] = datePart.split(".").map(Number)
+    const [hours, minutes, seconds] = timePart ? timePart.split(":").map(Number) : [0, 0, 0]
+    return new Date(year, month - 1, day, hours, minutes, seconds)
+  }, [])
 
   useEffect(() => {
-    loadData()
-  }, [loadData])
+    const fetchData = async () => {
+      if (!user?.id) {
+        console.log("Kein Benutzer gefunden")
+        return
+      }
+
+      try {
+        const fetchAllCalls = async () => {
+          let allCalls: Call[] = []
+          let count = 0
+          const { count: totalCount } = await supabase
+            .from("calls")
+            .select("*", { count: "exact" })
+            .eq("user_id", user.id)
+
+          const actualCount = totalCount ?? 0
+
+          while (count < actualCount) {
+            const { data, error } = await supabase
+              .from("calls")
+              .select("*")
+              .eq("user_id", user.id)
+              .range(count, count + 999)
+              .order("id", { ascending: false })
+
+            if (error) throw error
+            if (!data) break
+
+            allCalls = [...allCalls, ...data]
+            count += 1000
+          }
+          return allCalls
+        }
+
+        const [projectsData, callsData] = await Promise.all([
+          supabase.from("projects").select("*").eq("user_id", user.id),
+          fetchAllCalls(),
+        ])
+
+        if (projectsData.error) throw projectsData.error
+
+        console.log("Tatsächliche Anzahl der abgerufenen Anrufe:", callsData.length)
+
+        const processedCalls = (callsData || []).map((call) => ({
+          ...call,
+          Duration: parseDuration(call.formattedduration),
+          internal_name: call.name,
+        }))
+
+        const processedProjects = (projectsData.data || []).map((project) => ({
+          ...project,
+          custom_rates:
+            typeof project.custom_rates === "string" ? JSON.parse(project.custom_rates) : project.custom_rates,
+        }))
+
+        setCalls(processedCalls)
+        setProjects(processedProjects)
+
+        const options = new Set<string>()
+        processedCalls.forEach((call) => {
+          if (call.formattedtime) {
+            const callDate = parseDate(call.formattedtime)
+            options.add(callDate.toISOString().slice(0, 7))
+          }
+        })
+        const sortedOptions = Array.from(options).sort().reverse()
+        setMonthOptions(sortedOptions)
+
+        if (sortedOptions.length > 0) {
+          setSelectedTime(sortedOptions[0])
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error)
+        setError("Fehler beim Laden der Daten")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [user, parseDuration, parseDate])
+
+  const formatDuration = (duration: number): string => {
+    if (!duration && duration !== 0) return "0:00"
+    const hours = Math.floor(duration / 3600)
+    const minutes = Math.floor((duration % 3600) / 60)
+    const seconds = duration % 60
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+    }
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`
+  }
+
+  const formatCurrency = (amount: number): string => {
+    return (amount / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })
+  }
 
   const getProjectForCall = useCallback(
     (call: Call): Project | undefined => {
+      if (!call.name) {
+        return undefined
+      }
       return projects.find((project) => call.name.includes(project.internal_name))
     },
     [projects],
   )
 
-  const calculateEarnings = useCallback(
-    (call: Call, project: Project): { earnings: number; billableSeconds: number } => {
-      if (!project || !call.Duration) {
-        return { earnings: 0, billableSeconds: 0 }
-      }
+  const calculateStats = useCallback(
+    (filteredCalls: Call[]) => {
+      const userCalls = filteredCalls.filter((call) => call.user_id === user?.id)
+      const userProjects = projects.filter((project) => project.user_id === user?.id)
 
-      const duration = call.Duration // in Sekunden
+      const calculateEarnings = (call: Call, project: Project): { earnings: number; billableSeconds: number } => {
+        if (!project || !call.Duration) {
+          return { earnings: 0, billableSeconds: 0 }
+        }
 
-      // Wenn die Dauer unter der Mindestdauer liegt, ist der Anruf nicht abrechenbar
-      if (duration < project.min_duration) {
-        return { earnings: 0, billableSeconds: 0 }
-      }
+        const duration = call.Duration // in Sekunden
 
-      let earnings = 0
-      const billableSeconds = duration // Tatsächliche Dauer für die Anzeige
+        if (duration < project.min_duration) {
+          return { earnings: 0, billableSeconds: 0 }
+        }
 
-      switch (project.payment_model) {
-        case "perMinute":
-          // Konvertiere in Minuten für die Berechnung
-          let billableMinutes = duration / 60
+        let earnings = 0
+        const billableSeconds = duration
 
-          // Wenn Aufrundung aktiviert ist, runden wir für die Verdienstberechnung auf
-          if (project.round_up_minutes) {
-            billableMinutes = Math.ceil(billableMinutes)
-          }
+        switch (project.payment_model) {
+          case "perMinute":
+            let billableMinutes = duration / 60
 
-          // Berechne den Verdienst (rate ist bereits in Cent)
-          earnings = Math.round(billableMinutes * (project.per_minute_rate || 0))
-          break
+            if (project.round_up_minutes) {
+              billableMinutes = Math.ceil(billableMinutes)
+            }
 
-        case "perCall":
-          // Bei Vergütung pro Anruf ist der Betrag fix
-          earnings = project.per_call_rate || 0
-          break
+            earnings = Math.round(billableMinutes * (project.per_minute_rate || 0))
+            break
 
-        case "custom":
-          if (project.custom_rates && project.custom_rates.length > 0) {
-            const sortedRates = [...project.custom_rates].sort((a, b) => a.maxDuration - b.maxDuration)
+          case "perCall":
+            earnings = project.per_call_rate || 0
+            break
 
-            for (const rate of sortedRates) {
-              if (duration >= rate.minDuration && duration <= rate.maxDuration) {
-                earnings = rate.rate // Rate ist bereits in Cent
-                break
+          case "custom":
+            if (project.custom_rates && project.custom_rates.length > 0) {
+              const sortedRates = [...project.custom_rates].sort((a, b) => a.maxDuration - b.maxDuration)
+
+              for (const rate of sortedRates) {
+                if (duration >= rate.minDuration && duration <= rate.maxDuration) {
+                  earnings = rate.rate
+                  break
+                }
+              }
+
+              if (duration > sortedRates[sortedRates.length - 1].maxDuration) {
+                earnings = sortedRates[sortedRates.length - 1].rate
               }
             }
+            break
+        }
 
-            // Wenn die Dauer über allen Stufen liegt, verwende die höchste Stufe
-            if (duration > sortedRates[sortedRates.length - 1].maxDuration) {
-              earnings = sortedRates[sortedRates.length - 1].rate
-            }
-          }
-          break
+        return { earnings, billableSeconds }
       }
 
-      return { earnings, billableSeconds }
-    },
-    [],
-  )
+      const projectStats = userProjects.map((project) => {
+        const projectCalls = userCalls.filter((call) => {
+          const matchingProject = getProjectForCall(call)
+          return matchingProject?.id === project.id
+        })
 
-  useEffect(() => {
-    if (!loading && calls.length > 0 && projects.length > 0) {
-      const data: MonthlyData = {}
-      calls.forEach((call) => {
-        const date = parseGermanDate(call.formattedtime)
-        if (isNaN(date.getTime())) {
-          console.error("Invalid date:", call.formattedtime)
-          return
-        }
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
-        if (!data[monthKey]) {
-          data[monthKey] = []
-        }
-        const project = getProjectForCall(call)
-        let entry = data[monthKey].find((e) => e.projectId === (project ? project.id : null))
-        if (!entry) {
-          entry = {
-            projectId: project ? project.id : null,
-            projectName: project ? project.display_name : "Nicht zugeordnete Anrufe",
-            calls: 0,
-            billableCalls: 0,
-            duration: 0,
-            billableDuration: 0,
-            amount: 0,
-          }
-          data[monthKey].push(entry)
-        }
-        entry.calls += 1
-        entry.duration += call.Duration || 0
-        if (project && call.Duration && call.Duration > 0) {
+        let totalEarnings = 0
+        let totalBillableSeconds = 0
+        const totalCalls = projectCalls.length
+        const totalDuration = projectCalls.reduce((sum, call) => sum + (call.Duration || 0), 0)
+        const billableCalls = projectCalls.filter((call) => {
           const { earnings, billableSeconds } = calculateEarnings(call, project)
           if (earnings > 0) {
-            entry.billableCalls += 1
-            entry.billableDuration += billableSeconds
-            entry.amount += earnings
+            totalEarnings += earnings
+            totalBillableSeconds += billableSeconds
+            return true
           }
+          return false
+        }).length
+
+        return {
+          ...project,
+          totalCalls,
+          billableCalls,
+          totalEarnings,
+          totalDuration,
+          totalBillableSeconds,
         }
       })
-      setMonthlyData(data)
-      const sortedMonths = Object.keys(data).sort().reverse()
-      setSelectedMonth(sortedMonths[0] || "")
+
+      const unassignedCalls = userCalls.filter((call) => !getProjectForCall(call))
+      const unassignedStats = {
+        id: "unassigned",
+        display_name: "Nicht zugeordnete Anrufe",
+        totalCalls: unassignedCalls.length,
+        billableCalls: 0,
+        totalEarnings: 0,
+        totalDuration: unassignedCalls.reduce((sum, call) => sum + (call.Duration || 0), 0),
+        totalBillableSeconds: 0,
+      }
+
+      const allStats = [...projectStats, unassignedStats]
+      return allStats
+    },
+    [user, projects, getProjectForCall],
+  )
+
+  const filteredStats = useMemo(() => {
+    let filteredCalls = calls
+    if (selectedTime === "daily" && selectedDate) {
+      filteredCalls = calls.filter((call) => {
+        const callDate = parseDate(call.formattedtime)
+        const compareDate = new Date(selectedDate)
+
+        // Set both dates to the start of the day for accurate comparison
+        callDate.setHours(0, 0, 0, 0)
+        compareDate.setHours(0, 0, 0, 0)
+
+        return callDate.getTime() === compareDate.getTime()
+      })
+    } else if (selectedTime !== "all") {
+      filteredCalls = calls.filter((call) => {
+        const callDate = parseDate(call.formattedtime)
+        return callDate.toISOString().slice(0, 7) === selectedTime
+      })
     }
-  }, [calls, projects, loading, getProjectForCall, calculateEarnings])
 
-  const parseDuration = (formattedduration: string): number => {
-    if (!formattedduration) return 0
-    const [minutes, seconds] = formattedduration.split(":").map(Number)
-    return minutes * 60 + (seconds || 0)
-  }
+    return calculateStats(filteredCalls)
+  }, [calls, selectedTime, selectedDate, calculateStats, parseDate])
 
-  const formatDuration = (seconds: number): string => {
-    if (!seconds && seconds !== 0) return "0:00"
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const remainingSeconds = seconds % 60
-
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`
-    }
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
-  }
-
-  const formatCurrency = (cents: number): string => {
-    return (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })
-  }
+  const totals = useMemo(() => {
+    return filteredStats.reduce(
+      (acc, stat) => ({
+        totalCalls: acc.totalCalls + stat.totalCalls,
+        billableCalls: acc.billableCalls + stat.billableCalls,
+        totalDuration: acc.totalDuration + stat.totalDuration,
+        totalBillableSeconds: acc.totalBillableSeconds + stat.totalBillableSeconds,
+        totalEarnings: acc.totalEarnings + stat.totalEarnings,
+      }),
+      { totalCalls: 0, billableCalls: 0, totalDuration: 0, totalBillableSeconds: 0, totalEarnings: 0 },
+    )
+  }, [filteredStats])
 
   const exportToPDF = async () => {
     try {
+      console.log("Starting PDF export process")
       const { data: profiles, error: profilesError } = await supabase.auth.getUser()
-      if (profilesError) throw profilesError
+      if (profilesError) {
+        console.error("Error fetching user:", profilesError)
+        throw new Error(`Fehler beim Abrufen des Benutzers: ${profilesError.message}`)
+      }
 
       const userId = profiles.user?.id
 
       if (!userId) {
+        console.error("User not found")
         throw new Error("Benutzer nicht gefunden")
       }
 
-      // Lade die Firmendaten aus der Datenbank
-      const { data: companyData, error: companyDataError } = await supabase
+      console.log("Fetching company data")
+      const { data: companyDataResponse, error: companyDataError } = await supabase
         .from("firma_daten")
         .select("*")
         .eq("user_id", userId)
-        .single()
 
-      if (companyDataError) throw companyDataError
-
-      if (!companyData) {
-        throw new Error("Keine Firmendaten gefunden")
+      if (companyDataError) {
+        console.error("Error fetching company data:", companyDataError)
+        throw new Error(`Fehler beim Abrufen der Firmendaten: ${companyDataError.message}`)
       }
 
+      if (!companyDataResponse || companyDataResponse.length === 0) {
+        console.error("No company data found")
+        toast({
+          id: "company-data-error",
+          title: "Fehler",
+          description: "Bitte fügen Sie zuerst Ihre Firmendaten in den Einstellungen hinzu.",
+          variant: "destructive",
+        })
+        throw new Error("Bitte fügen Sie zuerst Ihre Firmendaten in den Einstellungen hinzu")
+      }
+
+      const firstCompanyData = companyDataResponse[0]
+
+      console.log("Initializing jsPDF")
       const doc = new jsPDF("p", "mm", "a4")
       const monthDate = new Date(
-        Number.parseInt(selectedMonth.split("-")[0]),
-        Number.parseInt(selectedMonth.split("-")[1]) - 1,
+        Number.parseInt(selectedTime.split("-")[0]),
+        Number.parseInt(selectedTime.split("-")[1]) - 1,
         1,
       )
       const monthName = monthDate.toLocaleString("de-DE", { month: "long", year: "numeric" })
-      const invoiceNumber = `INV-${selectedMonth}-${Math.floor(Math.random() * 1000)
+      const invoiceNumber = `INV-${selectedTime}-${Math.floor(Math.random() * 1000)
         .toString()
         .padStart(3, "0")}`
       const currentDate = new Date().toLocaleDateString("de-DE")
 
+      console.log("Adding header to PDF")
       const addHeader = () => {
         doc.setFillColor(248, 248, 248)
         doc.rect(0, 0, doc.internal.pageSize.width, 40, "F")
 
-        // Firmenname
         doc.setTextColor(60, 60, 60)
         doc.setFontSize(22)
         doc.setFont("helvetica", "bold")
-        doc.text(companyData.name, 14, 25)
+        doc.text(firstCompanyData.name, 14, 25)
 
-        // Firmendetails
         doc.setFontSize(10)
         doc.setFont("helvetica", "normal")
-        const address = `${companyData.strasse}, ${companyData.plz} ${companyData.stadt}`
+        const address = `${firstCompanyData.strasse}, ${firstCompanyData.plz} ${firstCompanyData.stadt}`
         doc.text(address, doc.internal.pageSize.width - 14, 15, { align: "right" })
-        doc.text(`Tel: ${companyData.telefon}`, doc.internal.pageSize.width - 14, 20, { align: "right" })
-        doc.text(`E-Mail: ${companyData.email}`, doc.internal.pageSize.width - 14, 25, { align: "right" })
-        if (companyData.webseite) {
-          doc.text(companyData.webseite, doc.internal.pageSize.width - 14, 30, { align: "right" })
+        doc.text(`Tel: ${firstCompanyData.telefon}`, doc.internal.pageSize.width - 14, 20, { align: "right" })
+        doc.text(`E-Mail: ${firstCompanyData.email}`, doc.internal.pageSize.width - 14, 25, { align: "right" })
+        if (firstCompanyData.webseite) {
+          doc.text(firstCompanyData.webseite, doc.internal.pageSize.width - 14, 30, { align: "right" })
         }
       }
 
+      console.log("Adding invoice details to PDF")
       const addInvoiceDetails = () => {
         doc.setFontSize(18)
         doc.setFont("helvetica", "bold")
@@ -338,6 +407,7 @@ export default function MonthlyBilling() {
         doc.text(`Rechnungsdatum: ${currentDate}`, 14, 75)
       }
 
+      console.log("Adding footer to PDF")
       const addFooter = () => {
         const pageCount = doc.internal.pages.length
         doc.setFontSize(8)
@@ -346,7 +416,7 @@ export default function MonthlyBilling() {
           doc.setPage(i)
           doc.text(`Seite ${i} von ${pageCount}`, 14, doc.internal.pageSize.height - 10)
           doc.text(
-            `${companyData.name} • ${companyData.strasse} • ${companyData.plz} ${companyData.stadt}`,
+            `${firstCompanyData.name} • ${firstCompanyData.strasse} • ${firstCompanyData.plz} ${firstCompanyData.stadt}`,
             doc.internal.pageSize.width / 2,
             doc.internal.pageSize.height - 10,
             { align: "center" },
@@ -354,20 +424,21 @@ export default function MonthlyBilling() {
         }
       }
 
-      // PDF-Erstellung
       addHeader()
       addInvoiceDetails()
 
+      console.log("Preparing table data")
       const tableColumn = ["Projektname", "Anrufe", "Abrechenbare Anrufe", "Gesamtdauer", "Abrechenbare Zeit", "Betrag"]
-      const tableRows = sortedMonthData.map((entry) => [
-        entry.projectName,
-        entry.calls.toString(),
-        entry.billableCalls.toString(),
-        formatDuration(entry.duration),
-        formatDuration(entry.billableDuration),
-        formatCurrency(entry.amount),
+      const tableRows = filteredStats.map((stat) => [
+        stat.display_name,
+        stat.totalCalls.toString(),
+        stat.billableCalls.toString(),
+        formatDuration(stat.totalDuration),
+        formatDuration(stat.totalBillableSeconds),
+        formatCurrency(stat.totalEarnings),
       ])
 
+      console.log("Adding table to PDF")
       doc.autoTable({
         head: [tableColumn],
         body: tableRows,
@@ -378,7 +449,7 @@ export default function MonthlyBilling() {
         showFoot: false,
       })
 
-      // Zusammenfassung
+      console.log("Adding summary to PDF")
       const finalY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 85
       doc.setFillColor(248, 248, 248)
       doc.rect(14, finalY + 10, doc.internal.pageSize.width - 28, 20, "F")
@@ -388,60 +459,84 @@ export default function MonthlyBilling() {
       doc.text(`Anrufe gesamt: ${totals.totalCalls}`, 20, finalY + 22)
       doc.text(`Abrechenbar: ${totals.billableCalls}`, 100, finalY + 22)
       doc.setFont("helvetica", "bold")
-      doc.text(`Summe: ${formatCurrency(totals.amount)}`, doc.internal.pageSize.width - 20, finalY + 22, {
+      doc.text(`Summe: ${formatCurrency(totals.totalEarnings)}`, doc.internal.pageSize.width - 20, finalY + 22, {
         align: "right",
       })
 
       addFooter()
 
-      doc.save(`Monatliche_Abrechnung_${selectedMonth}.pdf`)
+      console.log("Saving PDF")
+      doc.save(`Monatliche_Abrechnung_${selectedTime}.pdf`)
 
+      console.log("PDF export completed successfully")
       toast({
         id: "pdf-export-success",
         title: "Erfolg",
         description: "PDF wurde erfolgreich erstellt und heruntergeladen.",
       })
     } catch (error) {
-      console.error("Fehler beim Exportieren des PDFs:", error)
+      console.error("Detailed error in PDF export:", error)
+      let errorMessage = "PDF konnte nicht erstellt werden. "
+      if (error instanceof Error) {
+        errorMessage += error.message
+      } else {
+        errorMessage += "Unbekannter Fehler aufgetreten."
+      }
       toast({
         id: "pdf-export-error",
         title: "Fehler",
-        description: "PDF konnte nicht erstellt werden. Bitte versuchen Sie es später erneut.",
+        description: errorMessage,
         variant: "destructive",
       })
     }
   }
 
-  const availableMonths = Object.keys(monthlyData)
-    .sort()
-    .reverse()
-    .map((month) => ({
-      value: month,
-      label: formatMonthYear(month),
-    }))
+  useEffect(() => {
+    const checkCompanyData = async () => {
+      if (!user?.id) return false
 
-  const selectedMonthData = useMemo(() => monthlyData[selectedMonth] || [], [monthlyData, selectedMonth])
+      const { data, error } = await supabase.from("firma_daten").select("*").eq("user_id", user.id)
 
-  const sortedMonthData = useMemo(() => {
-    return [...selectedMonthData].sort((a, b) => {
-      if (a.projectId === null) return 1
-      if (b.projectId === null) return -1
-      return a.projectName.localeCompare(b.projectName)
-    })
-  }, [selectedMonthData])
+      if (error) {
+        console.error("Error checking company data:", error)
+        return false
+      }
 
-  const totals = useMemo(() => {
-    return selectedMonthData.reduce(
-      (acc, curr) => ({
-        totalCalls: acc.totalCalls + curr.calls,
-        billableCalls: acc.billableCalls + curr.billableCalls,
-        totalDuration: acc.totalDuration + curr.duration,
-        billableDuration: acc.billableDuration + curr.billableDuration,
-        amount: acc.amount + curr.amount,
-      }),
-      { totalCalls: 0, billableCalls: 0, totalDuration: 0, billableDuration: 0, amount: 0 },
+      return data && data.length > 0
+    }
+
+    const checkData = async () => {
+      const hasData = await checkCompanyData()
+      setHasCompanyData(hasData)
+    }
+
+    if (user?.id) {
+      checkData()
+    }
+  }, [user])
+
+  if (error) {
+    console.error("Fehler:", error)
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-950 to-indigo-900 flex items-center justify-center">
+        <Card className="w-full max-w-md bg-white/10 backdrop-blur-sm border-blue-800/50">
+          <CardHeader>
+            <CardTitle className="text-xl font-bold text-white">Fehler beim Laden der Daten</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-blue-100">{error}</p>
+            <p className="text-blue-200 mt-2">Bitte überprüfen Sie:</p>
+            <ul className="list-disc list-inside text-blue-200 mt-2">
+              <li>Ihre Internetverbindung</li>
+              <li>Ob Sie angemeldet sind</li>
+              <li>Ob Projekte angelegt wurden</li>
+              <li>Ob Anrufe importiert wurden</li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
     )
-  }, [selectedMonthData])
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-950 to-indigo-900">
@@ -470,28 +565,48 @@ export default function MonthlyBilling() {
           </CardHeader>
           <CardContent>
             <div className="flex justify-between items-center mb-6">
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <Select value={selectedTime} onValueChange={setSelectedTime}>
                 <SelectTrigger className="w-[200px] bg-white border-gray-300 text-gray-700">
                   <SelectValue placeholder="Monat auswählen" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-gray-200">
-                  {availableMonths.map((month) => (
-                    <SelectItem key={month.value} value={month.value} className="hover:bg-gray-100">
-                      {month.label}
+                  <SelectItem value="all">Alle Zeiträume</SelectItem>
+                  <SelectItem value="daily">Tägliche Ansicht</SelectItem>
+                  {monthOptions.map((month) => (
+                    <SelectItem key={month} value={month}>
+                      {new Date(month).toLocaleString("de-DE", { month: "long", year: "numeric" })}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-
-              <div className="space-x-2">
-                <Button
-                  onClick={exportToPDF}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg"
-                >
-                  <FileDown className="mr-2 h-4 w-4" />
-                  Als PDF exportieren
-                </Button>
-              </div>
+              {selectedTime === "daily" && (
+                <div className="relative z-10">
+                  <input
+                    type="date"
+                    value={selectedDate ? selectedDate.toISOString().split("T")[0] : ""}
+                    onChange={(e) => {
+                      const date = e.target.valueAsDate
+                      if (date) {
+                        setSelectedDate(date)
+                      }
+                    }}
+                    className="w-[200px] bg-white border border-gray-300 rounded-md p-2 text-gray-700"
+                  />
+                </div>
+              )}
+              <Button
+                onClick={exportToPDF}
+                disabled={!hasCompanyData}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FileDown className="mr-2 h-4 w-4" />
+                {hasCompanyData ? "Als PDF exportieren" : "Firmendaten fehlen"}
+              </Button>
+              {!hasCompanyData && (
+                <div className="mt-2 text-sm text-red-600">
+                  Bitte fügen Sie zuerst Ihre Firmendaten in den Einstellungen hinzu, bevor Sie ein PDF exportieren.
+                </div>
+              )}
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -507,7 +622,7 @@ export default function MonthlyBilling() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isInitialLoad ? (
+                  {loading ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8">
                         <div className="flex flex-col items-center gap-2 text-gray-500">
@@ -516,49 +631,28 @@ export default function MonthlyBilling() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ) : loading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
-                        <div className="flex flex-col items-center gap-2 text-gray-500">
-                          <Loader2 className="h-8 w-8 animate-spin" />
-                          <p>Aktualisiere Daten...</p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : error ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
-                        <div className="flex flex-col items-center gap-2 text-red-500">
-                          <AlertCircle className="h-8 w-8" />
-                          <p>{error}</p>
-                          <Button onClick={loadData} variant="outline" size="sm" className="mt-2">
-                            Erneut versuchen
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : selectedMonthData.length === 0 ? (
+                  ) : filteredStats.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8">
                         <div className="flex flex-col items-center gap-2 text-gray-400">
-                          <p>Keine Daten für den ausgewählten Monat verfügbar</p>
+                          <p>Keine Daten für den ausgewählten Zeitraum verfügbar</p>
                         </div>
                       </TableCell>
                     </TableRow>
                   ) : (
                     <>
-                      {sortedMonthData.map((entry, index) => (
+                      {filteredStats.map((stat, index) => (
                         <TableRow
                           key={index}
                           className="border-b border-blue-100 transition-colors duration-200 hover:bg-blue-50/50"
                         >
-                          <TableCell className="text-blue-800">{entry.projectName}</TableCell>
-                          <TableCell className="text-blue-800">{entry.calls}</TableCell>
-                          <TableCell className="text-blue-800">{entry.billableCalls}</TableCell>
-                          <TableCell className="text-blue-800">{formatDuration(entry.duration)}</TableCell>
-                          <TableCell className="text-blue-800">{formatDuration(entry.billableDuration)}</TableCell>
+                          <TableCell className="text-blue-800">{stat.display_name}</TableCell>
+                          <TableCell className="text-blue-800">{stat.totalCalls}</TableCell>
+                          <TableCell className="text-blue-800">{stat.billableCalls}</TableCell>
+                          <TableCell className="text-blue-800">{formatDuration(stat.totalDuration)}</TableCell>
+                          <TableCell className="text-blue-800">{formatDuration(stat.totalBillableSeconds)}</TableCell>
                           <TableCell className="text-blue-800">
-                            <span className="text-blue-600 font-semibold">{formatCurrency(entry.amount)}</span>
+                            <span className="text-blue-600 font-semibold">{formatCurrency(stat.totalEarnings)}</span>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -568,10 +662,10 @@ export default function MonthlyBilling() {
                         <TableCell className="text-blue-900 text-lg">{totals.billableCalls}</TableCell>
                         <TableCell className="text-blue-900 text-lg">{formatDuration(totals.totalDuration)}</TableCell>
                         <TableCell className="text-blue-900 text-lg">
-                          {formatDuration(totals.billableDuration)}
+                          {formatDuration(totals.totalBillableSeconds)}
                         </TableCell>
                         <TableCell className="text-blue-900 text-lg">
-                          <span className="text-blue-700">{formatCurrency(totals.amount)}</span>
+                          <span className="text-blue-700">{formatCurrency(totals.totalEarnings)}</span>
                         </TableCell>
                       </TableRow>
                     </>

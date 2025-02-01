@@ -1,18 +1,16 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from "react"
-import { format, parse } from "date-fns"
-import { de } from "date-fns/locale"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { Euro, Clock, PhoneCall, PieChart } from "lucide-react"
+import { Euro, Clock, PhoneCall, PieChart, LayoutDashboard } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { supabase } from "@/lib/supabaseClient"
 import Link from "next/link"
-import { LayoutDashboard } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import type React from "react"
 
 interface Call {
   id: number
@@ -57,6 +55,13 @@ export default function MonthlyStats() {
     return minutes * 60 + (seconds || 0)
   }, [])
 
+  const parseDate = useCallback((dateString: string): Date => {
+    const [datePart, timePart] = dateString.split(", ")
+    const [day, month, year] = datePart.split(".").map(Number)
+    const [hours, minutes, seconds] = timePart ? timePart.split(":").map(Number) : [0, 0, 0]
+    return new Date(year, month - 1, day, hours, minutes, seconds)
+  }, [])
+
   useEffect(() => {
     const fetchData = async () => {
       if (!user?.id) {
@@ -65,15 +70,43 @@ export default function MonthlyStats() {
       }
 
       try {
+        const fetchAllCalls = async () => {
+          let allCalls: Call[] = []
+          let count = 0
+          const { count: totalCount } = await supabase
+            .from("calls")
+            .select("*", { count: "exact" })
+            .eq("user_id", user.id)
+
+          const actualCount = totalCount ?? 0
+
+          while (count < actualCount) {
+            const { data, error } = await supabase
+              .from("calls")
+              .select("*")
+              .eq("user_id", user.id)
+              .range(count, count + 999)
+              .order("id", { ascending: false })
+
+            if (error) throw error
+            if (!data) break
+
+            allCalls = [...allCalls, ...data]
+            count += 1000
+          }
+          return allCalls
+        }
+
         const [projectsData, callsData] = await Promise.all([
           supabase.from("projects").select("*").eq("user_id", user.id),
-          supabase.from("calls").select("*").eq("user_id", user.id),
+          fetchAllCalls(),
         ])
 
         if (projectsData.error) throw projectsData.error
-        if (callsData.error) throw callsData.error
 
-        const processedCalls = (callsData.data || []).map((call) => ({
+        console.log("Tatsächliche Anzahl der abgerufenen Anrufe:", callsData.length)
+
+        const processedCalls = (callsData || []).map((call) => ({
           ...call,
           Duration: parseDuration(call.formattedduration),
           internal_name: call.name,
@@ -91,8 +124,8 @@ export default function MonthlyStats() {
         const options = new Set<string>()
         processedCalls.forEach((call) => {
           if (call.formattedtime) {
-            const date = parse(call.formattedtime.split(",")[0], "dd.MM.yyyy", new Date())
-            options.add(format(date, "yyyy-MM"))
+            const callDate = parseDate(call.formattedtime)
+            options.add(callDate.toISOString().slice(0, 7))
           }
         })
         const sortedOptions = Array.from(options).sort().reverse()
@@ -108,7 +141,7 @@ export default function MonthlyStats() {
     }
 
     fetchData()
-  }, [user, parseDuration])
+  }, [user, parseDuration, parseDate])
 
   const formatDuration = (duration: number): string => {
     if (!duration && duration !== 0) return "0:00"
@@ -156,30 +189,25 @@ export default function MonthlyStats() {
 
         const duration = call.Duration // in Sekunden
 
-        // Wenn die Dauer unter der Mindestdauer liegt, ist der Anruf nicht abrechenbar
         if (duration < project.min_duration) {
           return { earnings: 0, billableSeconds: 0 }
         }
 
         let earnings = 0
-        const billableSeconds = duration // Tatsächliche Dauer für die Anzeige
+        const billableSeconds = duration
 
         switch (project.payment_model) {
           case "perMinute":
-            // Konvertiere in Minuten für die Berechnung
             let billableMinutes = duration / 60
 
-            // Wenn Aufrundung aktiviert ist, runden wir für die Verdienstberechnung auf
             if (project.round_up_minutes) {
               billableMinutes = Math.ceil(billableMinutes)
             }
 
-            // Berechne den Verdienst (rate ist bereits in Cent)
             earnings = Math.round(billableMinutes * (project.per_minute_rate || 0))
             break
 
           case "perCall":
-            // Bei Vergütung pro Anruf ist der Betrag fix
             earnings = project.per_call_rate || 0
             break
 
@@ -189,12 +217,11 @@ export default function MonthlyStats() {
 
               for (const rate of sortedRates) {
                 if (duration >= rate.minDuration && duration <= rate.maxDuration) {
-                  earnings = rate.rate // Rate ist bereits in Cent
+                  earnings = rate.rate
                   break
                 }
               }
 
-              // Wenn die Dauer über allen Stufen liegt, verwende die höchste Stufe
               if (duration > sortedRates[sortedRates.length - 1].maxDuration) {
                 earnings = sortedRates[sortedRates.length - 1].rate
               }
@@ -320,13 +347,21 @@ export default function MonthlyStats() {
     let filteredCalls = calls.filter((call) => call.user_id === user?.id)
     if (selectedTime === "daily" && selectedDate) {
       filteredCalls = filteredCalls.filter((call) => {
-        const callDate = parse(call.formattedtime.split(",")[0], "dd.MM.yyyy", new Date())
-        return format(callDate, "dd.MM.yyyy") === format(selectedDate, "dd.MM.yyyy")
+        const callDate = parseDate(call.formattedtime)
+        const compareDate = new Date(selectedDate)
+        compareDate.setHours(0, 0, 0, 0)
+
+        console.log("Anruf Datum:", callDate.toLocaleString())
+        console.log("Ausgewähltes Datum:", compareDate.toLocaleString())
+        console.log("Anruf Zeitstempel:", callDate.getTime())
+        console.log("Ausgewählter Zeitstempel:", compareDate.getTime())
+
+        return callDate.getTime() === compareDate.getTime()
       })
     } else if (selectedTime !== "all") {
       filteredCalls = filteredCalls.filter((call) => {
-        const callDate = parse(call.formattedtime.split(",")[0], "dd.MM.yyyy", new Date())
-        return format(callDate, "yyyy-MM") === selectedTime
+        const callDate = parseDate(call.formattedtime)
+        return callDate.toISOString().slice(0, 7) === selectedTime
       })
     }
     const stats = calculateStats(filteredCalls)
@@ -337,7 +372,7 @@ export default function MonthlyStats() {
       totalDuration: filteredCalls.reduce((sum, call) => sum + (call.Duration || 0), 0),
       totalBillableSeconds: stats.reduce((sum, stat) => sum + stat.totalBillableSeconds, 0),
     }
-  }, [calls, user, selectedTime, selectedDate, calculateStats])
+  }, [calls, user, selectedTime, selectedDate, calculateStats, parseDate])
 
   const activeStats = useMemo(() => {
     const projectsWithCalls = projectStats
@@ -356,17 +391,36 @@ export default function MonthlyStats() {
     return result
   }, [projectStats, unassignedStats])
 
+  const logFilteredCalls = useCallback((filteredCalls: Call[]) => {
+    console.log("Gefilterte Anrufe:")
+    filteredCalls.forEach((call) => {
+      console.log(`Datum: ${call.formattedtime}, Name: ${call.name}`)
+    })
+  }, [])
+
   const filteredStats = useMemo(() => {
     let filteredCalls = calls
     if (selectedTime === "daily" && selectedDate) {
       filteredCalls = calls.filter((call) => {
-        const callDate = parse(call.formattedtime.split(",")[0], "dd.MM.yyyy", new Date())
-        return format(callDate, "dd.MM.yyyy") === format(selectedDate, "dd.MM.yyyy")
+        const callDate = parseDate(call.formattedtime)
+        const compareDate = new Date(selectedDate)
+
+        // Set both dates to the start of the day for accurate comparison
+        callDate.setHours(0, 0, 0, 0)
+        compareDate.setHours(0, 0, 0, 0)
+
+        console.log("Anruf Datum:", callDate.toLocaleString())
+        console.log("Ausgewähltes Datum:", compareDate.toLocaleString())
+        console.log("Anruf Zeitstempel:", callDate.getTime())
+        console.log("Ausgewählter Zeitstempel:", compareDate.getTime())
+
+        return callDate.getTime() === compareDate.getTime()
       })
+      logFilteredCalls(filteredCalls)
     } else if (selectedTime !== "all") {
       filteredCalls = calls.filter((call) => {
-        const callDate = parse(call.formattedtime.split(",")[0], "dd.MM.yyyy", new Date())
-        return format(callDate, "yyyy-MM") === selectedTime
+        const callDate = parseDate(call.formattedtime)
+        return callDate.toISOString().slice(0, 7) === selectedTime
       })
     }
 
@@ -374,7 +428,7 @@ export default function MonthlyStats() {
       return calculateStats(filteredCalls)
     }
     return calculateStats(filteredCalls).filter((stat) => stat.id.toString() === activeTab)
-  }, [activeTab, calls, selectedTime, selectedDate, calculateStats])
+  }, [activeTab, calls, selectedTime, selectedDate, calculateStats, parseDate, logFilteredCalls])
 
   if (error) {
     console.error("Fehler:", error)
@@ -432,7 +486,7 @@ export default function MonthlyStats() {
                   <SelectItem value="daily">Tägliche Ansicht</SelectItem>
                   {monthOptions.map((month) => (
                     <SelectItem key={month} value={month}>
-                      {format(parse(month, "yyyy-MM", new Date()), "MMMM yyyy", { locale: de })}
+                      {new Date(month).toLocaleString("de-DE", { month: "long", year: "numeric" })}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -441,7 +495,7 @@ export default function MonthlyStats() {
                 <div className="relative z-10">
                   <input
                     type="date"
-                    value={selectedDate ? format(selectedDate, "yyyy-MM-dd") : ""}
+                    value={selectedDate ? selectedDate.toISOString().split("T")[0] : ""}
                     onChange={(e) => {
                       const date = e.target.valueAsDate
                       if (date) {
@@ -457,8 +511,8 @@ export default function MonthlyStats() {
               {selectedTime === "all"
                 ? "Alle Zeiträume"
                 : selectedTime === "daily"
-                  ? `Tägliche Ansicht: ${selectedDate ? format(selectedDate, "dd.MM.yyyy") : "Kein Datum ausgewählt"}`
-                  : `Monatliche Ansicht: ${format(parse(selectedTime, "yyyy-MM", new Date()), "MMMM yyyy", { locale: de })}`}
+                  ? `Tägliche Ansicht: ${selectedDate ? selectedDate.toLocaleDateString("de-DE") : "Kein Datum ausgewählt"}`
+                  : `Monatliche Ansicht: ${new Date(selectedTime).toLocaleString("de-DE", { month: "long", year: "numeric" })}`}
             </div>
             <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList key="tabsList" className="bg-blue-50 p-1 rounded-lg flex flex-wrap gap-2">
@@ -705,7 +759,7 @@ function StatCard({
   items: { label: string; value: string | number }[]
 }) {
   return (
-    <Card className="overflow-hidden bg-blue-50 border-blue-200/50 shadow-md hover:shadow-lg transition-shadow duration-300">
+    <Card className="overflow-hidden bg-blue50 border-blue-200/50 shadow-md hover:shadow-lg transition-shadow duration-300">
       <CardHeader className="bg-blue-100/50 border-b border-blue-200/50">
         <CardTitle className="text-lg font-semibold flex items-center text-blue-900">
           {icon}
