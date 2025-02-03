@@ -119,7 +119,6 @@ export default function ImportCallsPage() {
           const { data: existingCalls, error: checkError } = await supabase
             .from('calls')
             .select()
-            .eq('type', call.type)
             .eq('name', call.name)
             .eq('number', call.number)
             .eq('formattedtime', call.formattedtime)
@@ -236,4 +235,3 @@ export default function ImportCallsPage() {
     </div>
   )
 }
-

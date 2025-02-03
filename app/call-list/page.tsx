@@ -263,8 +263,8 @@ const CallList = () => {
 
   const getCallType = (type: string) => {
     const typeLower = type.toLowerCase()
-    if (typeLower.includes("in")) return "incoming"
-    if (typeLower.includes("out")) return "outgoing"
+    if (typeLower === "in" || typeLower === "1" || typeLower.includes("in")) return "incoming"
+    if (typeLower === "out" || typeLower === "0" || typeLower.includes("out")) return "outgoing"
     if (typeLower.includes("miss")) return "missed"
     return type
   }

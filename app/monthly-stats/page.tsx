@@ -350,12 +350,7 @@ export default function MonthlyStats() {
         const callDate = parseDate(call.formattedtime)
         const compareDate = new Date(selectedDate)
         compareDate.setHours(0, 0, 0, 0)
-
-        console.log("Anruf Datum:", callDate.toLocaleString())
-        console.log("Ausgewähltes Datum:", compareDate.toLocaleString())
-        console.log("Anruf Zeitstempel:", callDate.getTime())
-        console.log("Ausgewählter Zeitstempel:", compareDate.getTime())
-
+        callDate.setHours(0, 0, 0, 0)
         return callDate.getTime() === compareDate.getTime()
       })
     } else if (selectedTime !== "all") {
@@ -366,10 +361,10 @@ export default function MonthlyStats() {
     }
     const stats = calculateStats(filteredCalls)
     return {
-      totalCalls: filteredCalls.length,
+      totalCalls: stats.reduce((sum, stat) => sum + stat.totalCalls, 0),
       billableCalls: stats.reduce((sum, stat) => sum + stat.billableCalls, 0),
       totalEarnings: stats.reduce((sum, stat) => sum + stat.totalEarnings, 0),
-      totalDuration: filteredCalls.reduce((sum, call) => sum + (call.Duration || 0), 0),
+      totalDuration: stats.reduce((sum, stat) => sum + stat.totalDuration, 0),
       totalBillableSeconds: stats.reduce((sum, stat) => sum + stat.totalBillableSeconds, 0),
     }
   }, [calls, user, selectedTime, selectedDate, calculateStats, parseDate])
